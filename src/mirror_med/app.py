@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 
+import weave
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -7,6 +8,9 @@ from pydantic import BaseModel, Field
 from mirror_med.a2a.agent_config import create_a2a_app
 from mirror_med.logging import get_logger
 from mirror_med.settings import get_settings
+
+weave.init("stepandel-none/hack-jul12")
+
 
 logger = get_logger(__name__)
 
@@ -107,7 +111,7 @@ async def health_check() -> HealthResponse:
 # Mount A2A handler if base URL is configured
 if settings.a2a_base_url:
     a2a_app = create_a2a_app(settings.a2a_base_url)
-    app.mount("/a2a", a2a_app)
+    app.mount("/", a2a_app)
 
 
 def main():

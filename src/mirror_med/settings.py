@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     cors_allowed_origins: str = "http://localhost:3000"
 
     # A2A Configuration
-    a2a_base_url: str | None = None
+    a2a_base_url: str = "https://lima.llama-bull.ts.net/"
 
 
 @lru_cache

@@ -8,13 +8,13 @@ import sys
 def main():
     """Run ruff format and check commands."""
     try:
-        subprocess.run(["ruff", "format"], check=True)
+        subprocess.run(["ruff", "format", "src"], check=True)
     except subprocess.CalledProcessError:
         print("❌ Formatting failed")
         sys.exit(1)
 
     try:
-        subprocess.run(["ruff", "check", "--fix"], check=True)
+        subprocess.run(["ruff", "check", "--fix", "src"], check=True)
     except subprocess.CalledProcessError:
         print("❌ Linting failed")
         sys.exit(1)
