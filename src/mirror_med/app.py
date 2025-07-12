@@ -3,10 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from starlette.requests import Request as StarletteRequest
-from starlette.types import Receive, Scope, Send
 
-from mirror_med.a2a.agent_config import get_a2a_base_url, get_or_create_a2a_app
+from mirror_med.a2a.agent_config import create_a2a_app
 from mirror_med.logging import get_logger
 from mirror_med.settings import get_settings
 
@@ -106,31 +104,10 @@ async def health_check() -> HealthResponse:
     return HealthResponse(status="ok")
 
 
-class DynamicA2AMount:
-    """Dynamic mount point for A2A applications."""
-
-    def __init__(self, path: str = "/a2a"):
-        self.path_prefix = path.rstrip("/")
-
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] == "http" and scope["path"].startswith(self.path_prefix):
-            # Create a request object to extract the base URL
-            request = StarletteRequest(scope, receive)
-
-            # Get the base URL and then get/create the A2A app
-            base_url = get_a2a_base_url(request)
-            a2a_app = get_or_create_a2a_app(base_url)
-
-            # Adjust the path to remove the mount prefix
-            original_path = scope["path"]
-            scope["path"] = original_path[len(self.path_prefix) :] or "/"
-
-            # Call the A2A app
-            await a2a_app(scope, receive, send)
-
-
-# Mount the dynamic A2A handler
-app.mount("/a2a", DynamicA2AMount("/a2a"))
+# Mount A2A handler if base URL is configured
+if settings.a2a_base_url:
+    a2a_app = create_a2a_app(settings.a2a_base_url)
+    app.mount("/a2a", a2a_app)
 
 
 def main():
