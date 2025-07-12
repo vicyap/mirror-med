@@ -77,7 +77,6 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down MirrorMed API")
 
 
-
 app = FastAPI(
     title="MirrorMed API",
     version="0.1.0",
