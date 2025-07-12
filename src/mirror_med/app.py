@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from typing import Any
 
 import weave
 from fastapi import FastAPI
@@ -70,6 +71,39 @@ class HealthResponse(BaseModel):
     status: str = Field(..., example="ok")
 
 
+class VisitInput(BaseModel):
+    # Use Any to accept flexible structure for stub
+    social_history: Any
+    medical_history: Any
+    allergies: Any
+    surgical_history: Any
+    hospitalizations: Any
+    family_history: Any
+    medications: Any
+    pcp: Any
+    forecast: Any
+    measurements: Any
+    alcohol: Any
+    sleep: Any
+    exercise: Any
+
+
+class RecommendationItem(BaseModel):
+    description: str
+    rating: int
+
+
+class Recommendations(BaseModel):
+    alcohol: RecommendationItem
+    sleep: RecommendationItem
+    exercise: RecommendationItem
+    supplements: list[RecommendationItem]
+
+
+class VisitOutput(VisitInput):
+    recommendations: Recommendations
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle."""
@@ -106,6 +140,29 @@ app.add_middleware(
 )
 async def health_check() -> HealthResponse:
     return HealthResponse(status="ok")
+
+
+@app.post("/visit", response_model=VisitOutput)
+async def create_visit(visit_data: VisitInput) -> VisitOutput:
+    # Convert input to dict
+    visit_dict = visit_data.model_dump()
+
+    # Add stubbed recommendations
+    visit_dict["recommendations"] = {
+        "alcohol": {"description": "Limit to 1 drink per day", "rating": 8},
+        "sleep": {"description": "Aim for 7-8 hours nightly", "rating": 9},
+        "exercise": {
+            "description": "30 minutes of moderate activity, 5 days/week",
+            "rating": 8,
+        },
+        "supplements": [
+            {"description": "Take 2000 IU Vitamin D3 daily", "rating": 9},
+            {"description": "Consider 1000 mg Omega-3 daily", "rating": 7},
+        ],
+    }
+
+    # Return complete output
+    return VisitOutput(**visit_dict)
 
 
 # Mount A2A handler if base URL is configured

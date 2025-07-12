@@ -13,6 +13,7 @@ dependencies = [
     "weave>=0.51.56",
     "a2a-sdk[sqlite]>=0.2.11",
     "python-dotenv>=1.1.1",
+    "crewai>=0.141.0",
 ]
 
 [project.optional-dependencies]
