@@ -1,5 +1,4 @@
 import json
-
 from typing import Any
 
 import httpx
@@ -31,29 +30,25 @@ from service.types import (
 
 class ConversationClient:
     def __init__(self, base_url):
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
 
-    async def send_message(
-        self, payload: SendMessageRequest
-    ) -> SendMessageResponse:
+    async def send_message(self, payload: SendMessageRequest) -> SendMessageResponse:
         return SendMessageResponse(**await self._send_request(payload))
 
     async def _send_request(self, request: JSONRPCRequest) -> dict[str, Any]:
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
-                    self.base_url + '/' + request.method,
-                    json=request.model_dump(mode='json', exclude_none=True),
+                    self.base_url + "/" + request.method,
+                    json=request.model_dump(mode="json", exclude_none=True),
                 )
                 response.raise_for_status()
                 return response.json()
             except httpx.HTTPStatusError as e:
-                print('http error', e)
-                raise AgentClientHTTPError(
-                    e.response.status_code, str(e)
-                ) from e
+                print("http error", e)
+                raise AgentClientHTTPError(e.response.status_code, str(e)) from e
             except json.JSONDecodeError as e:
-                print('decode error', e)
+                print("decode error", e)
                 raise AgentClientJSONError(str(e)) from e
 
     async def create_conversation(
@@ -69,9 +64,7 @@ class ConversationClient:
     async def get_events(self, payload: GetEventRequest) -> GetEventResponse:
         return GetEventResponse(**await self._send_request(payload))
 
-    async def list_messages(
-        self, payload: ListMessageRequest
-    ) -> ListMessageResponse:
+    async def list_messages(self, payload: ListMessageRequest) -> ListMessageResponse:
         return ListMessageResponse(**await self._send_request(payload))
 
     async def get_pending_messages(

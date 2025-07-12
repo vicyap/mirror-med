@@ -8,7 +8,6 @@ from a2a.utils import new_agent_text_message, new_task
 from a2a.utils.errors import ServerError
 from agent import MindsDBAgent
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -33,24 +32,24 @@ class MindsDBAgentExecutor(AgentExecutor):
 
         try:
             async for item in self.agent.stream(query, task.contextId):
-                is_task_complete = item['is_task_complete']
+                is_task_complete = item["is_task_complete"]
                 if not is_task_complete:
                     await updater.update_status(
                         TaskState.working,
                         new_agent_text_message(
-                            item['metadata'],
+                            item["metadata"],
                             task.contextId,
                             task.id,
                         ),
                     )
                 else:
-                    parts = item['parts']
+                    parts = item["parts"]
                     await updater.add_artifact(parts)
                     await updater.complete()
                     break
 
         except Exception as e:
-            logger.error(f'An error occurred while streaming the response: {e}')
+            logger.error(f"An error occurred while streaming the response: {e}")
             raise ServerError(error=InternalError()) from e
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue):

@@ -33,7 +33,7 @@ class PushNotificationListener:
                 self.start_server(),
                 self.loop,
             )
-            print('======= push notification listener started =======')
+            print("======= push notification listener started =======")
         except Exception as e:
             print(e)
 
@@ -41,24 +41,18 @@ class PushNotificationListener:
         import uvicorn
 
         self.app = Starlette()
-        self.app.add_route(
-            '/notify', self.handle_notification, methods=['POST']
-        )
-        self.app.add_route(
-            '/notify', self.handle_validation_check, methods=['GET']
-        )
+        self.app.add_route("/notify", self.handle_notification, methods=["POST"])
+        self.app.add_route("/notify", self.handle_validation_check, methods=["GET"])
 
         config = uvicorn.Config(
-            self.app, host=self.host, port=self.port, log_level='critical'
+            self.app, host=self.host, port=self.port, log_level="critical"
         )
         self.server = uvicorn.Server(config)
         await self.server.serve()
 
     async def handle_validation_check(self, request: Request):
-        validation_token = request.query_params.get('validationToken')
-        print(
-            f'\npush notification verification received => \n{validation_token}\n'
-        )
+        validation_token = request.query_params.get("validationToken")
+        print(f"\npush notification verification received => \n{validation_token}\n")
 
         if not validation_token:
             return Response(status_code=400)
@@ -71,12 +65,12 @@ class PushNotificationListener:
             if not await self.notification_receiver_auth.verify_push_notification(
                 request
             ):
-                print('push notification verification failed')
+                print("push notification verification failed")
                 return None
         except Exception as e:
-            print(f'error verifying push notification: {e}')
+            print(f"error verifying push notification: {e}")
             print(traceback.format_exc())
             return None
 
-        print(f'\npush notification received => \n{data}\n')
+        print(f"\npush notification received => \n{data}\n")
         return Response(status_code=200)

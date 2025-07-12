@@ -1,13 +1,11 @@
 # mypy: ignore-errors
 import asyncio
 import logging
-
 from collections.abc import AsyncGenerator, AsyncIterable
 from typing import Any
 from uuid import uuid4
 
 import httpx
-
 from a2a.client import A2AClient
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events.event_queue import EventQueue
@@ -44,7 +42,6 @@ from google.adk.tools import BaseTool, ToolContext
 from google.genai import types
 from pydantic import ConfigDict
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -65,9 +62,9 @@ class ADKAgentExecutor(AgentExecutor):
 
     def __init__(self, calendar_agent_url):
         self._agent = LlmAgent(
-            model='gemini-2.0-flash-001',
-            name='birthday_planner_agent',
-            description='An agent that helps manage birthday parties.',
+            model="gemini-2.0-flash-001",
+            name="birthday_planner_agent",
+            description="An agent that helps manage birthday parties.",
             after_tool_callback=self._handle_auth_required_task,
             instruction="""
     You are an agent that helps plan birthday parties.
@@ -102,7 +99,7 @@ class ADKAgentExecutor(AgentExecutor):
     ) -> AsyncGenerator[Event]:
         return self.runner.run_async(
             session_id=session_id,
-            user_id='self',
+            user_id="self",
             new_message=new_message,
             run_config=A2ARunConfig(current_task_updater=task_updater),
         )
@@ -115,13 +112,11 @@ class ADKAgentExecutor(AgentExecutor):
         tool_response: dict,
     ) -> dict | None:
         """Handle requests that return auth-required."""
-        if tool.name != 'message_calendar_agent':
+        if tool.name != "message_calendar_agent":
             return None
-        if not tool_context.state.get('task_suspended'):
+        if not tool_context.state.get("task_suspended"):
             return None
-        dependent_task = Task.model_validate(
-            tool_context.state['dependent_task']
-        )
+        dependent_task = Task.model_validate(tool_context.state["dependent_task"])
         if dependent_task.status.state != TaskState.auth_required:
             return None
         task_updater = self._get_task_updater(tool_context)
@@ -135,16 +130,16 @@ class ADKAgentExecutor(AgentExecutor):
         task_updater.update_status(
             TaskState.working,
             message=task_updater.new_agent_message(
-                [Part(TextPart(text='Checking calendar agent output'))]
+                [Part(TextPart(text="Checking calendar agent output"))]
             ),
         )
-        tool_context.state['task_suspended'] = False
-        tool_context.state['dependent_task'] = None
+        tool_context.state["task_suspended"] = False
+        tool_context.state["dependent_task"] = None
         content = []
         if task.artifacts:
             for artifact in task.artifacts:
                 content.extend(get_text_parts(artifact.parts))
-        return {'response': '\n'.join(content)}
+        return {"response": "\n".join(content)}
 
     def _get_task_updater(self, tool_context: ToolContext):
         return tool_context._invocation_context.run_config.current_task_updater
@@ -159,34 +154,32 @@ class ADKAgentExecutor(AgentExecutor):
             session_id,
         )
         session_id = session.id
-        async for event in self._run_agent(
-            session_id, new_message, task_updater
-        ):
-            logger.debug('Received ADK event: %s', event)
+        async for event in self._run_agent(session_id, new_message, task_updater):
+            logger.debug("Received ADK event: %s", event)
             if event.is_final_response():
                 response = convert_genai_parts_to_a2a(event.content.parts)
-                logger.debug('Yielding final response: %s', response)
+                logger.debug("Yielding final response: %s", response)
                 await task_updater.add_artifact(response)
                 await task_updater.complete()
                 break
             if calls := event.get_function_calls():
                 for call in calls:
                     # Provide an update on what we're doing.
-                    if call.name == 'message_calendar_agent':
+                    if call.name == "message_calendar_agent":
                         await task_updater.update_status(
                             TaskState.working,
                             message=task_updater.new_agent_message(
                                 [
                                     Part(
                                         root=TextPart(
-                                            text='Messaging the calendar agent'
+                                            text="Messaging the calendar agent"
                                         )
                                     )
                                 ]
                             ),
                         )
             elif not event.get_function_calls():
-                logger.debug('Yielding update response')
+                logger.debug("Yielding update response")
                 await task_updater.update_status(
                     TaskState.working,
                     message=task_updater.new_agent_message(
@@ -194,7 +187,7 @@ class ADKAgentExecutor(AgentExecutor):
                     ),
                 )
             else:
-                logger.debug('Skipping event')
+                logger.debug("Skipping event")
 
     async def _wait_for_dependent_task(self, dependent_task: Task):
         async with httpx.AsyncClient() as client:
@@ -212,11 +205,11 @@ class ADKAgentExecutor(AgentExecutor):
                     )
                 )
                 if not isinstance(response.root, GetTaskSuccessResponse):
-                    logger.debug('Getting dependent task failed: %s', response)
+                    logger.debug("Getting dependent task failed: %s", response)
                     # In a real scenario, may want to feed this response back to
                     # the agent loop to decide what to do. We'll just fail the
                     # task.
-                    raise Exception('Getting dependent task failed')
+                    raise Exception("Getting dependent task failed")
                 dependent_task = response.root.result
             return dependent_task
 
@@ -248,14 +241,12 @@ class ADKAgentExecutor(AgentExecutor):
 
     async def _upsert_session(self, session_id: str):
         return await self.runner.session_service.get_session(
-            app_name=self.runner.app_name, user_id='self', session_id=session_id
+            app_name=self.runner.app_name, user_id="self", session_id=session_id
         ) or await self.runner.session_service.create_session(
-            app_name=self.runner.app_name, user_id='self', session_id=session_id
+            app_name=self.runner.app_name, user_id="self", session_id=session_id
         )
 
-    async def message_calendar_agent(
-        self, message: str, tool_context: ToolContext
-    ):
+    async def message_calendar_agent(self, message: str, tool_context: ToolContext):
         """Send a message to the calendar agent."""
         # We take an overly simplistic approach to the A2A state machine:
         # - All requests to the calendar agent use the current session ID as the context ID.
@@ -266,7 +257,7 @@ class ADKAgentExecutor(AgentExecutor):
             params=MessageSendParams(
                 message=Message(
                     contextId=tool_context._invocation_context.session.id,
-                    taskId=tool_context.state.get('task_id'),
+                    taskId=tool_context.state.get("task_id"),
                     messageId=str(uuid4()),
                     role=Role.user,
                     parts=[Part(TextPart(text=message))],
@@ -274,7 +265,7 @@ class ADKAgentExecutor(AgentExecutor):
             ),
         )
         response = await self._send_agent_message(request)
-        logger.debug('[A2A Client] Received response: %s', response)
+        logger.debug("[A2A Client] Received response: %s", response)
         task_id = None
         content = []
         if isinstance(response.root, SendMessageSuccessResponse):
@@ -289,13 +280,13 @@ class ADKAgentExecutor(AgentExecutor):
                 if task.status.state != TaskState.completed:
                     task_id = task.id
                 if task.status.state == TaskState.auth_required:
-                    tool_context.state['task_suspended'] = True
-                    tool_context.state['dependent_task'] = task.model_dump()
+                    tool_context.state["task_suspended"] = True
+                    tool_context.state["dependent_task"] = task.model_dump()
             else:
                 content.extend(get_text_parts(response.root.result.parts))
-        tool_context.state['task_id'] = task_id
+        tool_context.state["task_id"] = task_id
         # Just turn it all into a string.
-        return {'response': '\n'.join(content)}
+        return {"response": "\n".join(content)}
 
     async def _send_agent_message(self, request: SendMessageRequest):
         async with httpx.AsyncClient() as client:
@@ -309,7 +300,7 @@ class ADKAgentExecutor(AgentExecutor):
             a2a_client = A2AClient(
                 httpx_client=client, url=self.calendar_agent_endpoint
             )
-            await a2a_client.get_task({'id': task_id})
+            await a2a_client.get_task({"id": task_id})
 
 
 def convert_a2a_parts_to_genai(parts: list[Part]) -> list[types.Part]:
@@ -335,8 +326,8 @@ def convert_a2a_part_to_genai(part: Part) -> types.Part:
                     data=part.file.bytes, mime_type=part.file.mime_type
                 )
             )
-        raise ValueError(f'Unsupported file type: {type(part.file)}')
-    raise ValueError(f'Unsupported part type: {type(part)}')
+        raise ValueError(f"Unsupported file type: {type(part.file)}")
+    raise ValueError(f"Unsupported part type: {type(part)}")
 
 
 def convert_genai_parts_to_a2a(parts: list[types.Part]) -> list[Part]:
@@ -368,4 +359,4 @@ def convert_genai_part_to_a2a(part: types.Part) -> Part:
                 )
             )
         )
-    raise ValueError(f'Unsupported part type: {part}')
+    raise ValueError(f"Unsupported part type: {part}")

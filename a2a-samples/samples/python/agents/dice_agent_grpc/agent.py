@@ -1,5 +1,4 @@
 import random
-
 from collections.abc import AsyncIterable
 
 from google.adk import Runner
@@ -44,16 +43,16 @@ def check_prime(nums: list[int]) -> str:
         if is_prime:
             primes.add(number)
     return (
-        'No prime numbers found.'
+        "No prime numbers found."
         if not primes
-        else f'{", ".join(str(num) for num in primes)} are prime numbers.'
+        else f"{', '.join(str(num) for num in primes)} are prime numbers."
     )
 
 
 def create_agent() -> LlmAgent:
     return LlmAgent(
-        model='gemini-2.0-flash-001',
-        name='dice_roll_agent',
+        model="gemini-2.0-flash-001",
+        name="dice_roll_agent",
         instruction="""
 You roll dice and answer questions about the outcome of the dice rolls.
 You can roll dice of different sizes.
@@ -72,7 +71,7 @@ When you are asked to roll a die and check prime numbers, you should always make
 You should always perform the previous 3 steps when asking for a roll and checking prime numbers.
 You should not rely on the previous history on prime results.
     """,
-        description='Rolls an N-sided dice and answers questions about the outcome of the dice rolls. Can also answer questions about prime numbers.',
+        description="Rolls an N-sided dice and answers questions about the outcome of the dice rolls. Can also answer questions about prime numbers.",
         tools=[
             roll_dice,
             check_prime,
@@ -83,11 +82,11 @@ You should not rely on the previous history on prime results.
 class DiceAgent:
     """An agent that handles reimbursement requests."""
 
-    SUPPORTED_CONTENT_TYPES = ['text', 'text/plain']
+    SUPPORTED_CONTENT_TYPES = ["text", "text/plain"]
 
     def __init__(self):
         self._agent = create_agent()
-        self._user_id = 'remote_agent'
+        self._user_id = "remote_agent"
         self._runner = Runner(
             app_name=self._agent.name,
             agent=self._agent,
@@ -96,17 +95,13 @@ class DiceAgent:
             memory_service=InMemoryMemoryService(),
         )
 
-    async def stream(
-        self, query, session_id
-    ) -> AsyncIterable[tuple[bool, str]]:
+    async def stream(self, query, session_id) -> AsyncIterable[tuple[bool, str]]:
         session = await self._runner.session_service.get_session(
             app_name=self._agent.name,
             user_id=self._user_id,
             session_id=session_id,
         )
-        content = types.Content(
-            role='user', parts=[types.Part.from_text(text=query)]
-        )
+        content = types.Content(role="user", parts=[types.Part.from_text(text=query)])
         if session is None:
             session = await self._runner.session_service.create_session(
                 app_name=self._agent.name,
@@ -120,7 +115,7 @@ class DiceAgent:
             if event.is_final_response():
                 yield (
                     True,
-                    '\n'.join([p.text for p in event.content.parts if p.text]),
+                    "\n".join([p.text for p in event.content.parts if p.text]),
                 )
             else:
-                yield (False, 'working...')
+                yield (False, "working...")

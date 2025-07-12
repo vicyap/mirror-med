@@ -8,23 +8,22 @@ from a2a.types import (
 )
 from agent_executor import TravelPlannerAgentExecutor
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     skill = AgentSkill(
-        id='travel_planner',
-        name='travel planner agent',
-        description='travel planner',
-        tags=['travel planner'],
-        examples=['hello', 'nice to meet you!'],
+        id="travel_planner",
+        name="travel planner agent",
+        description="travel planner",
+        tags=["travel planner"],
+        examples=["hello", "nice to meet you!"],
     )
 
     agent_card = AgentCard(
-        name='travel planner Agent',
-        description='travel planner',
-        url='http://localhost:10001/',
-        version='1.0.0',
-        defaultInputModes=['text'],
-        defaultOutputModes=['text'],
+        name="travel planner Agent",
+        description="travel planner",
+        url="http://localhost:10001/",
+        version="1.0.0",
+        defaultInputModes=["text"],
+        defaultOutputModes=["text"],
         capabilities=AgentCapabilities(streaming=True),
         skills=[skill],
     )
@@ -39,4 +38,4 @@ if __name__ == '__main__':
     )
     import uvicorn
 
-    uvicorn.run(server.build(), host='0.0.0.0', port=10001)
+    uvicorn.run(server.build(), host="0.0.0.0", port=10001)

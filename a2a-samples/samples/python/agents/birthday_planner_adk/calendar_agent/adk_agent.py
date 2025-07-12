@@ -10,8 +10,8 @@ def create_agent(client_id, client_secret) -> LlmAgent:
     """Constructs the ADK agent."""
     toolset = CalendarToolset(client_id=client_id, client_secret=client_secret)
     return LlmAgent(
-        model='gemini-2.0-flash-001',
-        name='calendar_agent',
+        model="gemini-2.0-flash-001",
+        name="calendar_agent",
         description="An agent that can help manage a user's calendar",
         instruction=f"""
 You are an agent that can help manage a user's calendar.

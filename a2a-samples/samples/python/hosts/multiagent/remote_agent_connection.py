@@ -2,7 +2,6 @@ from collections.abc import Callable
 from uuid import uuid4
 
 import httpx
-
 from a2a.client import A2AClient
 from a2a.types import (
     AgentCard,
@@ -15,7 +14,6 @@ from a2a.types import (
     TaskArtifactUpdateEvent,
     TaskStatusUpdateEvent,
 )
-
 
 TaskCallbackArg = Task | TaskStatusUpdateEvent | TaskArtifactUpdateEvent
 TaskUpdateCallback = Callable[[TaskCallbackArg, AgentCard], Task]
@@ -52,7 +50,7 @@ class RemoteAgentConnections:
                 # Otherwise we are in the Task + TaskUpdate cycle.
                 if task_callback and event:
                     task = task_callback(event, self.card)
-                if hasattr(event, 'final') and event.final:
+                if hasattr(event, "final") and event.final:
                     break
             return task
         # Non-streaming

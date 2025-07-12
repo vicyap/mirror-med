@@ -1,13 +1,11 @@
 import asyncio
 import logging
 import os
-
 from collections.abc import AsyncIterable
 from enum import Enum
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import httpx
-
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from semantic_kernel.agents import ChatCompletionAgent, ChatHistoryAgentThread
@@ -23,7 +21,6 @@ from semantic_kernel.contents import (
     StreamingTextContent,
 )
 from semantic_kernel.functions import KernelArguments, kernel_function
-
 
 if TYPE_CHECKING:
     from semantic_kernel.connectors.ai.chat_completion_client_base import (
@@ -41,16 +38,16 @@ load_dotenv()
 class ChatServices(str, Enum):
     """Enum for supported chat completion services."""
 
-    AZURE_OPENAI = 'azure_openai'
-    OPENAI = 'openai'
+    AZURE_OPENAI = "azure_openai"
+    OPENAI = "openai"
 
 
-service_id = 'default'
+service_id = "default"
 
 
 def get_chat_completion_service(
     service_name: ChatServices,
-) -> 'ChatCompletionClientBase':
+) -> "ChatCompletionClientBase":
     """Return an appropriate chat completion service based on the service name.
 
     Args:
@@ -66,7 +63,7 @@ def get_chat_completion_service(
         return _get_azure_openai_chat_completion_service()
     if service_name == ChatServices.OPENAI:
         return _get_openai_chat_completion_service()
-    raise ValueError(f'Unsupported service name: {service_name}')
+    raise ValueError(f"Unsupported service name: {service_name}")
 
 
 def _get_azure_openai_chat_completion_service() -> AzureChatCompletion:
@@ -86,8 +83,8 @@ def _get_openai_chat_completion_service() -> OpenAIChatCompletion:
     """
     return OpenAIChatCompletion(
         service_id=service_id,
-        ai_model_id=os.getenv('OPENAI_MODEL_ID'),
-        api_key=os.getenv('OPENAI_API_KEY'),
+        ai_model_id=os.getenv("OPENAI_MODEL_ID"),
+        api_key=os.getenv("OPENAI_API_KEY"),
     )
 
 
@@ -103,32 +100,28 @@ class CurrencyPlugin:
     """
 
     @kernel_function(
-        description='Retrieves exchange rate between currency_from and currency_to using Frankfurter API'
+        description="Retrieves exchange rate between currency_from and currency_to using Frankfurter API"
     )
     def get_exchange_rate(
         self,
-        currency_from: Annotated[
-            str, 'Currency code to convert from, e.g. USD'
-        ],
-        currency_to: Annotated[
-            str, 'Currency code to convert to, e.g. EUR or INR'
-        ],
-        date: Annotated[str, "Date or 'latest'"] = 'latest',
+        currency_from: Annotated[str, "Currency code to convert from, e.g. USD"],
+        currency_to: Annotated[str, "Currency code to convert to, e.g. EUR or INR"],
+        date: Annotated[str, "Date or 'latest'"] = "latest",
     ) -> str:
         try:
             response = httpx.get(
-                f'https://api.frankfurter.app/{date}',
-                params={'from': currency_from, 'to': currency_to},
+                f"https://api.frankfurter.app/{date}",
+                params={"from": currency_from, "to": currency_to},
                 timeout=10.0,
             )
             response.raise_for_status()
             data = response.json()
-            if 'rates' not in data or currency_to not in data['rates']:
-                return f'Could not retrieve rate for {currency_from} to {currency_to}'
-            rate = data['rates'][currency_to]
-            return f'1 {currency_from} = {rate} {currency_to}'
+            if "rates" not in data or currency_to not in data["rates"]:
+                return f"Could not retrieve rate for {currency_from} to {currency_to}"
+            rate = data["rates"][currency_to]
+            return f"1 {currency_from} = {rate} {currency_to}"
         except Exception as e:
-            return f'Currency API call failed: {e!s}'
+            return f"Currency API call failed: {e!s}"
 
 
 # endregion
@@ -139,7 +132,7 @@ class CurrencyPlugin:
 class ResponseFormat(BaseModel):
     """A Response Format model to direct how the model should respond."""
 
-    status: Literal['input_required', 'completed', 'error'] = 'input_required'
+    status: Literal["input_required", "completed", "error"] = "input_required"
     message: str
 
 
@@ -153,7 +146,7 @@ class SemanticKernelTravelAgent:
 
     agent: ChatCompletionAgent
     thread: ChatHistoryAgentThread = None
-    SUPPORTED_CONTENT_TYPES = ['text', 'text/plain']
+    SUPPORTED_CONTENT_TYPES = ["text", "text/plain"]
 
     def __init__(self):
         # Configure the chat completion service explicitly
@@ -162,12 +155,12 @@ class SemanticKernelTravelAgent:
 
         currency_exchange_agent = ChatCompletionAgent(
             service=chat_service,
-            name='CurrencyExchangeAgent',
+            name="CurrencyExchangeAgent",
             instructions=(
-                'You specialize in handling currency-related requests from travelers. '
-                'This includes providing current exchange rates, converting amounts between different currencies, '
-                'explaining fees or charges related to currency exchange, and giving advice on the best practices for exchanging currency. '
-                'Your goal is to assist travelers promptly and accurately with all currency-related questions.'
+                "You specialize in handling currency-related requests from travelers. "
+                "This includes providing current exchange rates, converting amounts between different currencies, "
+                "explaining fees or charges related to currency exchange, and giving advice on the best practices for exchanging currency. "
+                "Your goal is to assist travelers promptly and accurately with all currency-related questions."
             ),
             plugins=[CurrencyPlugin()],
         )
@@ -175,30 +168,30 @@ class SemanticKernelTravelAgent:
         # Define an ActivityPlannerAgent to handle activity-related tasks
         activity_planner_agent = ChatCompletionAgent(
             service=chat_service,
-            name='ActivityPlannerAgent',
+            name="ActivityPlannerAgent",
             instructions=(
-                'You specialize in planning and recommending activities for travelers. '
-                'This includes suggesting sightseeing options, local events, dining recommendations, '
-                'booking tickets for attractions, advising on travel itineraries, and ensuring activities '
-                'align with traveler preferences and schedule. '
-                'Your goal is to create enjoyable and personalized experiences for travelers.'
+                "You specialize in planning and recommending activities for travelers. "
+                "This includes suggesting sightseeing options, local events, dining recommendations, "
+                "booking tickets for attractions, advising on travel itineraries, and ensuring activities "
+                "align with traveler preferences and schedule. "
+                "Your goal is to create enjoyable and personalized experiences for travelers."
             ),
         )
 
         # Define the main TravelManagerAgent to delegate tasks to the appropriate agents
         self.agent = ChatCompletionAgent(
             service=chat_service,
-            name='TravelManagerAgent',
+            name="TravelManagerAgent",
             instructions=(
                 "Your role is to carefully analyze the traveler's request and forward it to the appropriate agent based on the "
-                'specific details of the query. '
-                'Forward any requests involving monetary amounts, currency exchange rates, currency conversions, fees related '
-                'to currency exchange, financial transactions, or payment methods to the CurrencyExchangeAgent. '
-                'Forward requests related to planning activities, sightseeing recommendations, dining suggestions, event '
-                'booking, itinerary creation, or any experiential aspects of travel that do not explicitly involve monetary '
-                'transactions to the ActivityPlannerAgent. '
-                'Your primary goal is precise and efficient delegation to ensure travelers receive accurate and specialized '
-                'assistance promptly.'
+                "specific details of the query. "
+                "Forward any requests involving monetary amounts, currency exchange rates, currency conversions, fees related "
+                "to currency exchange, financial transactions, or payment methods to the CurrencyExchangeAgent. "
+                "Forward requests related to planning activities, sightseeing recommendations, dining suggestions, event "
+                "booking, itinerary creation, or any experiential aspects of travel that do not explicitly involve monetary "
+                "transactions to the ActivityPlannerAgent. "
+                "Your primary goal is precise and efficient delegation to ensure travelers receive accurate and specialized "
+                "assistance promptly."
             ),
             plugins=[currency_exchange_agent, activity_planner_agent],
             arguments=KernelArguments(
@@ -252,7 +245,7 @@ class SemanticKernelTravelAgent:
         chunks: list[StreamingChatMessageContent] = []
 
         async def _handle_intermediate_message(
-            message: 'ChatMessageContent',
+            message: "ChatMessageContent",
         ) -> None:
             """Handle intermediate messages from the agent."""
             nonlocal plugin_notice_seen
@@ -263,14 +256,14 @@ class SemanticKernelTravelAgent:
             for item in message.items or []:
                 if isinstance(item, FunctionResultContent):
                     print(
-                        f'SK Function Result:> {item.result} for function: {item.name}'
+                        f"SK Function Result:> {item.result} for function: {item.name}"
                     )
                 elif isinstance(item, FunctionCallContent):
                     print(
-                        f'SK Function Call:> {item.name} with arguments: {item.arguments}'
+                        f"SK Function Call:> {item.name} with arguments: {item.arguments}"
                     )
                 else:
-                    print(f'SK Message:> {item}')
+                    print(f"SK Message:> {item}")
 
         async for chunk in self.agent.invoke_stream(
             messages=user_input,
@@ -279,18 +272,18 @@ class SemanticKernelTravelAgent:
         ):
             if plugin_event.is_set():
                 yield {
-                    'is_task_complete': False,
-                    'require_user_input': False,
-                    'content': 'Processing function calls...',
+                    "is_task_complete": False,
+                    "require_user_input": False,
+                    "content": "Processing function calls...",
                 }
                 plugin_event.clear()
 
             if any(isinstance(i, StreamingTextContent) for i in chunk.items):
                 if not text_notice_seen:
                     yield {
-                        'is_task_complete': False,
-                        'require_user_input': False,
-                        'content': 'Building the output...',
+                        "is_task_complete": False,
+                        "require_user_input": False,
+                        "content": "Building the output...",
                     }
                     text_notice_seen = True
                 chunks.append(chunk.message)
@@ -298,9 +291,7 @@ class SemanticKernelTravelAgent:
         if chunks:
             yield self._get_agent_response(sum(chunks[1:], chunks[0]))
 
-    def _get_agent_response(
-        self, message: 'ChatMessageContent'
-    ) -> dict[str, Any]:
+    def _get_agent_response(self, message: "ChatMessageContent") -> dict[str, Any]:
         """Extracts the structured response from the agent's message content.
 
         Args:
@@ -309,35 +300,33 @@ class SemanticKernelTravelAgent:
         Returns:
             dict: A dictionary containing the content, task completion status, and user input requirement.
         """
-        structured_response = ResponseFormat.model_validate_json(
-            message.content
-        )
+        structured_response = ResponseFormat.model_validate_json(message.content)
 
         default_response = {
-            'is_task_complete': False,
-            'require_user_input': True,
-            'content': 'We are unable to process your request at the moment. Please try again.',
+            "is_task_complete": False,
+            "require_user_input": True,
+            "content": "We are unable to process your request at the moment. Please try again.",
         }
 
         if isinstance(structured_response, ResponseFormat):
             response_map = {
-                'input_required': {
-                    'is_task_complete': False,
-                    'require_user_input': True,
+                "input_required": {
+                    "is_task_complete": False,
+                    "require_user_input": True,
                 },
-                'error': {
-                    'is_task_complete': False,
-                    'require_user_input': True,
+                "error": {
+                    "is_task_complete": False,
+                    "require_user_input": True,
                 },
-                'completed': {
-                    'is_task_complete': True,
-                    'require_user_input': False,
+                "completed": {
+                    "is_task_complete": True,
+                    "require_user_input": False,
                 },
             }
 
             response = response_map.get(structured_response.status)
             if response:
-                return {**response, 'content': structured_response.message}
+                return {**response, "content": structured_response.message}
 
         return default_response
 

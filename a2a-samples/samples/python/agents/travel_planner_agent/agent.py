@@ -1,7 +1,6 @@
 import json
 import os
 import sys
-
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -15,24 +14,24 @@ class TravelPlannerAgent:
     def __init__(self):
         """Initialize the travel dialogue model"""
         try:
-            with open('config.json') as f:
+            with open("config.json") as f:
                 config = json.load(f)
-            if not os.getenv(config['api_key']):
-                print(f'{config["api_key"]} environment variable not set.')
+            if not os.getenv(config["api_key"]):
+                print(f"{config['api_key']} environment variable not set.")
                 sys.exit(1)
-            api_key = os.getenv(config['api_key'])
+            api_key = os.getenv(config["api_key"])
 
             self.model = ChatOpenAI(
-                model=config['model_name'] or 'gpt-4o',
-                base_url=config['base_url'] or None,
-                api_key=api_key, # type: ignore
+                model=config["model_name"] or "gpt-4o",
+                base_url=config["base_url"] or None,
+                api_key=api_key,  # type: ignore
                 temperature=0.7,  # Control the generation randomness (0-2, higher values indicate greater randomness)
             )
         except FileNotFoundError:
-            print('Error: The configuration file config.json cannot be found.')
+            print("Error: The configuration file config.json cannot be found.")
             sys.exit()
         except KeyError as e:
-            print(f'The configuration file is missing required fields: {e}')
+            print(f"The configuration file is missing required fields: {e}")
             sys.exit()
 
     async def stream(self, query: str) -> AsyncGenerator[dict[str, Any], None]:
@@ -72,13 +71,13 @@ class TravelPlannerAgent:
             # Invoke the model in streaming mode to generate a response.
             async for chunk in self.model.astream(messages):
                 # Return the text content block.
-                if hasattr(chunk, 'content') and chunk.content:
-                    yield {'content': chunk.content, 'done': False}
-            yield {'content': '', 'done': True}
+                if hasattr(chunk, "content") and chunk.content:
+                    yield {"content": chunk.content, "done": False}
+            yield {"content": "", "done": True}
 
         except Exception as e:
-            print(f'error：{e!s}')
+            print(f"error：{e!s}")
             yield {
-                'content': 'Sorry, an error occurred while processing your request.',
-                'done': True,
+                "content": "Sorry, an error occurred while processing your request.",
+                "done": True,
             }

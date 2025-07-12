@@ -1,5 +1,4 @@
 import os
-
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -69,14 +68,14 @@ class GitHubToolset:
     def _get_github_client(self) -> Github:
         """Get GitHub client with authentication"""
         if self._github_client is None:
-            github_token = os.getenv('GITHUB_TOKEN')
+            github_token = os.getenv("GITHUB_TOKEN")
             if github_token:
                 auth = Auth.Token(github_token)
                 self._github_client = Github(auth=auth)
             else:
                 # Use without authentication (limited rate)
                 print(
-                    'Warning: No GITHUB_TOKEN found, using unauthenticated access (limited rate)'
+                    "Warning: No GITHUB_TOKEN found, using unauthenticated access (limited rate)"
                 )
                 self._github_client = Github()
         return self._github_client
@@ -113,15 +112,15 @@ class GitHubToolset:
                 except Exception:
                     # If no token, we can't get authenticated user, so require username
                     return RepositoryResponse(
-                        status='error',
-                        message='Username is required when not using authentication token',
-                        error_message='Username is required when not using authentication token',
+                        status="error",
+                        message="Username is required when not using authentication token",
+                        error_message="Username is required when not using authentication token",
                     )
 
             repos = []
             cutoff_date = datetime.now() - timedelta(days=days)
 
-            for repo in user.get_repos(sort='updated', direction='desc'):
+            for repo in user.get_repos(sort="updated", direction="desc"):
                 if len(repos) >= limit:
                     break
 
@@ -143,16 +142,16 @@ class GitHubToolset:
                     )
 
             return RepositoryResponse(
-                status='success',
+                status="success",
                 data=repos,
                 count=len(repos),
-                message=f'Successfully retrieved {len(repos)} repositories updated in the last {days} days',
+                message=f"Successfully retrieved {len(repos)} repositories updated in the last {days} days",
             )
         except Exception as e:
             return RepositoryResponse(
-                status='error',
-                message=f'Failed to get repositories: {e!s}',
-                error_message=f'Failed to get repositories: {e!s}',
+                status="error",
+                message=f"Failed to get repositories: {e!s}",
+                error_message=f"Failed to get repositories: {e!s}",
             )
 
     def get_recent_commits(
@@ -188,7 +187,7 @@ class GitHubToolset:
                 commits.append(
                     GitHubCommit(
                         sha=commit.sha[:8],
-                        message=commit.commit.message.split('\n')[
+                        message=commit.commit.message.split("\n")[
                             0
                         ],  # Only take the first line
                         author=commit.commit.author.name,
@@ -198,16 +197,16 @@ class GitHubToolset:
                 )
 
             return CommitResponse(
-                status='success',
+                status="success",
                 data=commits,
                 count=len(commits),
-                message=f'Successfully retrieved {len(commits)} commits for repository {repo_name} in the last {days} days',
+                message=f"Successfully retrieved {len(commits)} commits for repository {repo_name} in the last {days} days",
             )
         except Exception as e:
             return CommitResponse(
-                status='error',
-                message=f'Failed to get commits: {e!s}',
-                error_message=f'Failed to get commits: {e!s}',
+                status="error",
+                message=f"Failed to get commits: {e!s}",
+                error_message=f"Failed to get commits: {e!s}",
             )
 
     def search_repositories(
@@ -225,7 +224,7 @@ class GitHubToolset:
         """
         # Set default values
         if sort is None:
-            sort = 'updated'
+            sort = "updated"
         if limit is None:
             limit = 10
 
@@ -233,11 +232,13 @@ class GitHubToolset:
             github = self._get_github_client()
 
             # Add recent activity filter to query
-            search_query = f'{query} pushed:>={datetime.now() - timedelta(days=30):%Y-%m-%d}'
+            search_query = (
+                f"{query} pushed:>={datetime.now() - timedelta(days=30):%Y-%m-%d}"
+            )
 
             repos = []
             results = github.search_repositories(
-                query=search_query, sort=sort, order='desc'
+                query=search_query, sort=sort, order="desc"
             )
 
             for repo in results[:limit]:
@@ -258,22 +259,22 @@ class GitHubToolset:
                 )
 
             return RepositoryResponse(
-                status='success',
+                status="success",
                 data=repos,
                 count=len(repos),
                 message=f'Successfully searched for {len(repos)} repositories matching "{query}"',
             )
         except Exception as e:
             return RepositoryResponse(
-                status='error',
-                message=f'Failed to search repositories: {e!s}',
-                error_message=f'Failed to search repositories: {e!s}',
+                status="error",
+                message=f"Failed to search repositories: {e!s}",
+                error_message=f"Failed to search repositories: {e!s}",
             )
 
     def get_tools(self) -> dict[str, Any]:
         """Return dictionary of available tools for OpenAI function calling"""
         return {
-            'get_user_repositories': self,
-            'get_recent_commits': self,
-            'search_repositories': self,
+            "get_user_repositories": self,
+            "get_recent_commits": self,
+            "search_repositories": self,
         }

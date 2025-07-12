@@ -1,14 +1,12 @@
 import asyncio
 import json
 import os
-
 from typing import Any
 from urllib.parse import urlparse
 from uuid import uuid4
 
 import asyncclick as click
 import httpx
-
 from a2a.client import A2ACardResolver, A2AClient
 from a2a.types import (
     AgentCard,
@@ -27,7 +25,6 @@ from a2a.types import (
 from auth0.authentication.get_token import GetToken
 from dotenv import load_dotenv
 
-
 load_dotenv()
 access_token = None
 
@@ -44,34 +41,34 @@ class AgentAuth(httpx.Auth):
 
         # skip if not using oauth2 or credentials details are missing
         if not (
-            any(scheme.lower() == 'oauth2' for scheme in auth.schemes)
+            any(scheme.lower() == "oauth2" for scheme in auth.schemes)
             and auth.credentials
         ):
             yield request
             return
 
         if not access_token:
-            token_url = json.loads(auth.credentials)['tokenUrl']
-            print(f'\nFetching agent access token from {token_url}...')
+            token_url = json.loads(auth.credentials)["tokenUrl"]
+            print(f"\nFetching agent access token from {token_url}...")
             get_token = GetToken(
                 domain=urlparse(token_url).hostname,
-                client_id=os.getenv('A2A_CLIENT_AUTH0_CLIENT_ID'),
-                client_secret=os.getenv('A2A_CLIENT_AUTH0_CLIENT_SECRET'),
+                client_id=os.getenv("A2A_CLIENT_AUTH0_CLIENT_ID"),
+                client_secret=os.getenv("A2A_CLIENT_AUTH0_CLIENT_SECRET"),
             )
             access_token = get_token.client_credentials(
-                os.getenv('HR_AGENT_AUTH0_AUDIENCE')
-            )['access_token']
-            print('Done.\n')
+                os.getenv("HR_AGENT_AUTH0_AUDIENCE")
+            )["access_token"]
+            print("Done.\n")
 
-        request.headers['Authorization'] = f'Bearer {access_token}'
+        request.headers["Authorization"] = f"Bearer {access_token}"
         yield request
 
 
 @click.command()
-@click.option('--agent', default='http://localhost:10050')
-@click.option('--context_id')
-@click.option('--history', default=False, is_flag=True)
-@click.option('--debug', default=False, is_flag=True)
+@click.option("--agent", default="http://localhost:10050")
+@click.option("--context_id")
+@click.option("--history", default=False, is_flag=True)
+@click.option("--debug", default=False, is_flag=True)
 async def cli(agent: str, context_id: str | None, history: bool, debug: bool):
     async with httpx.AsyncClient() as httpx_client:
         agent_card = await (
@@ -81,7 +78,7 @@ async def cli(agent: str, context_id: str | None, history: bool, debug: bool):
             )
         ).get_agent_card()
 
-        print('======= Agent Card ========')
+        print("======= Agent Card ========")
         print(agent_card.model_dump_json(exclude_none=True, indent=2))
 
         httpx_client.auth = AgentAuth(agent_card)
@@ -99,7 +96,7 @@ async def cli(agent: str, context_id: str | None, history: bool, debug: bool):
 
         while continue_loop:
             task_id = uuid4().hex
-            print('=========  Starting a New Task ======== ')
+            print("=========  Starting a New Task ======== ")
             continue_loop = await complete_task(
                 client,
                 streaming,
@@ -109,7 +106,7 @@ async def cli(agent: str, context_id: str | None, history: bool, debug: bool):
             )
 
             if history and continue_loop:
-                print('========= History ======== ')
+                print("========= History ======== ")
                 get_task_response = await client.get_task(
                     GetTaskRequest(
                         id=str(uuid4()),
@@ -118,7 +115,7 @@ async def cli(agent: str, context_id: str | None, history: bool, debug: bool):
                 )
                 print(
                     get_task_response.root.model_dump_json(
-                        include={'result': {'history': True}}
+                        include={"result": {"history": True}}
                     )
                 )
 
@@ -128,21 +125,21 @@ def create_send_params(
 ) -> MessageSendParams:
     """Helper function to create the payload for sending a task."""
     send_params: dict[str, Any] = {
-        'message': {
-            'role': 'user',
-            'parts': [{'type': 'text', 'text': text}],
-            'messageId': uuid4().hex,
+        "message": {
+            "role": "user",
+            "parts": [{"type": "text", "text": text}],
+            "messageId": uuid4().hex,
         },
-        'configuration': {
-            'acceptedOutputModes': ['text'],
+        "configuration": {
+            "acceptedOutputModes": ["text"],
         },
     }
 
     if task_id:
-        send_params['message']['taskId'] = task_id
+        send_params["message"]["taskId"] = task_id
 
     if context_id:
-        send_params['message']['contextId'] = context_id
+        send_params["message"]["contextId"] = context_id
 
     return MessageSendParams(**send_params)
 
@@ -155,10 +152,10 @@ async def complete_task(
     debug: bool = False,
 ) -> bool:
     prompt = click.prompt(
-        '\nWhat do you want to send to the agent? (:q or quit to exit)'
+        "\nWhat do you want to send to the agent? (:q or quit to exit)"
     )
 
-    if prompt == ':q' or prompt == 'quit':
+    if prompt == ":q" or prompt == "quit":
         return False
 
     send_params = create_send_params(
@@ -175,31 +172,31 @@ async def complete_task(
         async for chunk in stream_response:
             result = chunk.root.result
             print(
-                f'stream event => {chunk.root.model_dump_json(exclude_none=True)}'
+                f"stream event => {chunk.root.model_dump_json(exclude_none=True)}"
                 if debug
                 else (
                     next(
                         (
-                            f'stream message => role: {result.role.value}, type: {part.root.type}, text: {part.root.text}'
+                            f"stream message => role: {result.role.value}, type: {part.root.type}, text: {part.root.text}"
                             for part in result.parts
                             if isinstance(part.root, TextPart)
                         ),
-                        '',
+                        "",
                     )
                     if isinstance(result, Message)
                     else next(
                         (
-                            f'stream message => role: {msg.role.value}, type: {part.root.type}, text: {part.root.text}'
+                            f"stream message => role: {msg.role.value}, type: {part.root.type}, text: {part.root.text}"
                             for msg in result.history or []
                             for part in msg.parts
                             if isinstance(part.root, TextPart)
                         ),
-                        '',
+                        "",
                     )
                     if isinstance(result, Task)
                     else next(
                         (
-                            f'stream message => role: {result.status.message.role.value}, type: {part.root.type}, text: {part.root.text}'
+                            f"stream message => role: {result.status.message.role.value}, type: {part.root.type}, text: {part.root.text}"
                             for part in (
                                 result.status.message.parts
                                 if result.status.message
@@ -207,19 +204,19 @@ async def complete_task(
                             )
                             if isinstance(part.root, TextPart)
                         ),
-                        '',
+                        "",
                     )
                     if isinstance(result, TaskStatusUpdateEvent)
                     else next(
                         (
-                            f'stream artifact => type: {part.root.type}, text: {part.root.text}'
+                            f"stream artifact => type: {part.root.type}, text: {part.root.text}"
                             for part in result.artifact.parts
                             if isinstance(part.root, TextPart)
                         ),
-                        '',
+                        "",
                     )
                     if isinstance(result, TaskArtifactUpdateEvent)
-                    else ''
+                    else ""
                 )
             )
 
@@ -232,7 +229,7 @@ async def complete_task(
             SendMessageRequest(id=str(uuid4()), params=send_params)
         )
         task = send_message_response.root.result
-        print(f'\n{task.model_dump_json(exclude_none=True)}')
+        print(f"\n{task.model_dump_json(exclude_none=True)}")
 
     # if the result is that more input is required, loop again.
     if task.status.state == TaskState.input_required:
@@ -248,5 +245,5 @@ async def complete_task(
     return True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(cli())

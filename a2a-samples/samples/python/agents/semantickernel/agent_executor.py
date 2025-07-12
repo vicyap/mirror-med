@@ -15,7 +15,6 @@ from a2a.utils import (
 )
 from agent import SemanticKernelTravelAgent
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -38,9 +37,9 @@ class SemanticKernelTravelAgentExecutor(AgentExecutor):
             await event_queue.enqueue_event(task)
 
         async for partial in self.agent.stream(query, task.contextId):
-            require_input = partial['require_user_input']
-            is_done = partial['is_task_complete']
-            text_content = partial['content']
+            require_input = partial["require_user_input"]
+            is_done = partial["is_task_complete"]
+            text_content = partial["content"]
 
             if require_input:
                 await event_queue.enqueue_event(
@@ -66,8 +65,8 @@ class SemanticKernelTravelAgentExecutor(AgentExecutor):
                         taskId=task.id,
                         lastChunk=True,
                         artifact=new_text_artifact(
-                            name='current_result',
-                            description='Result of request to agent.',
+                            name="current_result",
+                            description="Result of request to agent.",
                             text=text_content,
                         ),
                     )
@@ -97,7 +96,5 @@ class SemanticKernelTravelAgentExecutor(AgentExecutor):
                     )
                 )
 
-    async def cancel(
-        self, context: RequestContext, event_queue: EventQueue
-    ) -> None:
-        raise Exception('cancel not supported')
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
+        raise Exception("cancel not supported")

@@ -35,12 +35,10 @@ class ImageGenerationAgentExecutor(AgentExecutor):
         query = context.get_user_input()
         try:
             result = self.agent.invoke(query, context.context_id)
-            print(f'Final Result ===> {result}')
+            print(f"Final Result ===> {result}")
         except Exception as e:
-            print('Error invoking agent: %s', e)
-            raise ServerError(
-                error=ValueError(f'Error invoking agent: {e}')
-            ) from e
+            print("Error invoking agent: %s", e)
+            raise ServerError(error=ValueError(f"Error invoking agent: {e}")) from e
 
         data = self.agent.get_image_data(
             session_id=context.context_id, image_key=result.raw
@@ -58,16 +56,14 @@ class ImageGenerationAgentExecutor(AgentExecutor):
         else:
             parts = [
                 Part(
-                    root=TextPart(
-                        data.error if data else 'failed to generate image'
-                    ),
+                    root=TextPart(data.error if data else "failed to generate image"),
                 )
             ]
         await event_queue.enqueue_event(
             completed_task(
                 context.task_id,
                 context.context_id,
-                [new_artifact(parts, f'image_{context.task_id}')],
+                [new_artifact(parts, f"image_{context.task_id}")],
                 [context.message],
             )
         )

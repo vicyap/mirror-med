@@ -48,7 +48,7 @@ class DiceAgentExecutor(AgentExecutor):
             # Emit the appropriate events
             await updater.add_artifact(
                 [Part(root=TextPart(text=text))],
-                name='response',
+                name="response",
             )
             await updater.complete()
             break

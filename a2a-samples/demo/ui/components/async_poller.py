@@ -3,7 +3,6 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 import mesop.labs as mel
-
 from state.state import AppState
 
 
@@ -13,7 +12,7 @@ class AsyncAction:
     duration_seconds: int
 
 
-@mel.web_component(path='./async_poller.js')
+@mel.web_component(path="./async_poller.js")
 def async_poller(
     *,
     trigger_event: Callable[[mel.WebEvent], Any],
@@ -38,13 +37,13 @@ def async_poller(
       The web component that was created.
     """
     return mel.insert_web_component(
-        name='async-action-component',
+        name="async-action-component",
         key=key,
         events={
-            'triggerEvent': trigger_event,
+            "triggerEvent": trigger_event,
         },
         properties={
-            'polling_interval': action.duration_seconds if action else 1,
-            'action': asdict(action) if action else {},
+            "polling_interval": action.duration_seconds if action else 1,
+            "action": asdict(action) if action else {},
         },
     )

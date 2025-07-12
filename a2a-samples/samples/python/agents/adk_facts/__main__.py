@@ -2,7 +2,6 @@ import logging
 
 import click
 import uvicorn
-
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
@@ -14,7 +13,6 @@ from a2a.types import (
 from agent import root_agent as facts_agent
 from agent_executor import ADKAgentExecutor
 from dotenv import load_dotenv
-
 
 load_dotenv()
 
@@ -30,7 +28,6 @@ class MissingAPIKeyError(Exception):
 @click.option("--host", default="localhost")
 @click.option("--port", default=10002)
 def main(host, port):
-
     # Agent card (metadata)
     agent_card = AgentCard(
         name=facts_agent.name,

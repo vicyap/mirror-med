@@ -27,9 +27,7 @@ class ApplicationManager(ABC):
         pass
 
     @abstractmethod
-    def get_conversation(
-        self, conversation_id: str | None
-    ) -> Conversation | None:
+    def get_conversation(self, conversation_id: str | None) -> Conversation | None:
         pass
 
     @property

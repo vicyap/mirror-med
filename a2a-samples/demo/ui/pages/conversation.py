@@ -1,5 +1,4 @@
 import mesop as me
-
 from components.conversation import conversation
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
@@ -11,6 +10,6 @@ def conversation_page(app_state: AppState):
     state = me.state(AppState)
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():
-            with header('Conversation', 'chat'):
+            with header("Conversation", "chat"):
                 pass
             conversation()

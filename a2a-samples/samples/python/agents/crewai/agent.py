@@ -7,13 +7,11 @@ import base64
 import logging
 import os
 import re
-
 from collections.abc import AsyncIterable
 from io import BytesIO
 from typing import Any
 from uuid import uuid4
 
-from PIL import Image
 from common.utils.in_memory_cache import InMemoryCache
 from crewai import LLM, Agent, Crew, Task
 from crewai.process import Process
@@ -21,8 +19,8 @@ from crewai.tools import tool
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from PIL import Image
 from pydantic import BaseModel
-
 
 load_dotenv()
 
@@ -47,25 +45,25 @@ class Imagedata(BaseModel):
     error: str | None = None
 
 
-@tool('ImageGenerationTool')
+@tool("ImageGenerationTool")
 def generate_image_tool(
     prompt: str, session_id: str, artifact_file_id: str = None
 ) -> str:
     """Image generation tool that generates images or modifies a given image based on a prompt."""
     if not prompt:
-        raise ValueError('Prompt cannot be empty')
+        raise ValueError("Prompt cannot be empty")
 
     client = genai.Client()
     cache = InMemoryCache()
 
     text_input = (
         prompt,
-        'Ignore any input images if they do not match the request.',
+        "Ignore any input images if they do not match the request.",
     )
 
     ref_image = None
-    logger.info(f'Session id {session_id}')
-    print(f'Session id {session_id}')
+    logger.info(f"Session id {session_id}")
+    print(f"Session id {session_id}")
 
     # TODO (rvelicheti) - Change convoluted memory handling logic to a better
     # version.
@@ -79,7 +77,7 @@ def generate_image_tool(
         if artifact_file_id:
             try:
                 ref_image_data = session_image_data[artifact_file_id]
-                logger.info('Found reference image in prompt input')
+                logger.info("Found reference image in prompt input")
             except Exception:
                 ref_image_data = None
         if not ref_image_data:
@@ -99,27 +97,23 @@ def generate_image_tool(
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
+            model="gemini-2.0-flash-exp",
             contents=contents,
-            config=types.GenerateContentConfig(
-                response_modalities=['Text', 'Image']
-            ),
+            config=types.GenerateContentConfig(response_modalities=["Text", "Image"]),
         )
     except Exception as e:
-        logger.error(f'Error generating image {e}')
-        print(f'Exception {e}')
+        logger.error(f"Error generating image {e}")
+        print(f"Exception {e}")
         return -999999999
 
     for part in response.candidates[0].content.parts:
         if part.inline_data is not None:
             try:
-                print('Creating image data')
+                print("Creating image data")
                 data = Imagedata(
-                    bytes=base64.b64encode(part.inline_data.data).decode(
-                        'utf-8'
-                    ),
+                    bytes=base64.b64encode(part.inline_data.data).decode("utf-8"),
                     mime_type=part.inline_data.mime_type,
-                    name='generated_image.png',
+                    name="generated_image.png",
                     id=uuid4().hex,
                 )
                 session_data = cache.get(session_id)
@@ -132,39 +126,39 @@ def generate_image_tool(
 
                 return data.id
             except Exception as e:
-                logger.error(f'Error unpacking image {e}')
-                print(f'Exception {e}')
+                logger.error(f"Error unpacking image {e}")
+                print(f"Exception {e}")
     return -999999999
 
 
 class ImageGenerationAgent:
     """Agent that generates images based on user prompts."""
 
-    SUPPORTED_CONTENT_TYPES = ['text', 'text/plain', 'image/png']
+    SUPPORTED_CONTENT_TYPES = ["text", "text/plain", "image/png"]
 
     def __init__(self):
-        if os.getenv('GOOGLE_GENAI_USE_VERTEXAI'):
-            self.model = LLM(model='vertex_ai/gemini-2.0-flash')
-        elif os.getenv('GOOGLE_API_KEY'):
+        if os.getenv("GOOGLE_GENAI_USE_VERTEXAI"):
+            self.model = LLM(model="vertex_ai/gemini-2.0-flash")
+        elif os.getenv("GOOGLE_API_KEY"):
             self.model = LLM(
-                model='gemini/gemini-2.0-flash',
-                api_key=os.getenv('GOOGLE_API_KEY'),
+                model="gemini/gemini-2.0-flash",
+                api_key=os.getenv("GOOGLE_API_KEY"),
             )
 
         self.image_creator_agent = Agent(
-            role='Image Creation Expert',
+            role="Image Creation Expert",
             goal=(
                 "Generate an image based on the user's text prompt.If the prompt is"
-                ' vague, ask clarifying questions (though the tool currently'
+                " vague, ask clarifying questions (though the tool currently"
                 " doesn't support back-and-forth within one run). Focus on"
                 " interpreting the user's request and using the Image Generator"
-                ' tool effectively.'
+                " tool effectively."
             ),
             backstory=(
-                'You are a digital artist powered by AI. You specialize in taking'
-                ' textual descriptions and transforming them into visual'
-                ' representations using a powerful image generation tool. You aim'
-                ' for accuracy and creativity based on the prompt provided.'
+                "You are a digital artist powered by AI. You specialize in taking"
+                " textual descriptions and transforming them into visual"
+                " representations using a powerful image generation tool. You aim"
+                " for accuracy and creativity based on the prompt provided."
             ),
             verbose=False,
             allow_delegation=False,
@@ -175,17 +169,17 @@ class ImageGenerationAgent:
         self.image_creation_task = Task(
             description=(
                 "Receive a user prompt: '{user_prompt}'.\nAnalyze the prompt and"
-                ' identify if you need to create a new image or edit an existing'
-                ' one. Look for pronouns like this, that etc in the prompt, they'
-                ' might provide context, rewrite the prompt to include the'
-                ' context.If creating a new image, ignore any images provided as'
+                " identify if you need to create a new image or edit an existing"
+                " one. Look for pronouns like this, that etc in the prompt, they"
+                " might provide context, rewrite the prompt to include the"
+                " context.If creating a new image, ignore any images provided as"
                 " input context.Use the 'Image Generator' tool to for your image"
-                ' creation or modification. The tool will expect a prompt which is'
-                ' the {user_prompt} and the session_id which is {session_id}.'
-                ' Optionally the tool will also expect an artifact_file_id which is '
-                ' sent to you as {artifact_file_id}'
+                " creation or modification. The tool will expect a prompt which is"
+                " the {user_prompt} and the session_id which is {session_id}."
+                " Optionally the tool will also expect an artifact_file_id which is "
+                " sent to you as {artifact_file_id}"
             ),
-            expected_output='The id of the generated image',
+            expected_output="The id of the generated image",
             agent=self.image_creator_agent,
         )
 
@@ -198,7 +192,7 @@ class ImageGenerationAgent:
 
     def extract_artifact_file_id(self, query):
         try:
-            pattern = r'(?:id|artifact-file-id)\s+([0-9a-f]{32})'
+            pattern = r"(?:id|artifact-file-id)\s+([0-9a-f]{32})"
             match = re.search(pattern, query)
 
             if match:
@@ -212,18 +206,18 @@ class ImageGenerationAgent:
         artifact_file_id = self.extract_artifact_file_id(query)
 
         inputs = {
-            'user_prompt': query,
-            'session_id': session_id,
-            'artifact_file_id': artifact_file_id,
+            "user_prompt": query,
+            "session_id": session_id,
+            "artifact_file_id": artifact_file_id,
         }
-        logger.info(f'Inputs {inputs}')
-        print(f'Inputs {inputs}')
+        logger.info(f"Inputs {inputs}")
+        print(f"Inputs {inputs}")
         response = self.image_crew.kickoff(inputs)
         return response
 
     async def stream(self, query: str) -> AsyncIterable[dict[str, Any]]:
         """Streaming is not supported by CrewAI."""
-        raise NotImplementedError('Streaming is not supported by CrewAI.')
+        raise NotImplementedError("Streaming is not supported by CrewAI.")
 
     def get_image_data(self, session_id: str, image_key: str) -> Imagedata:
         """Return Imagedata given a key. This is a helper method from the agent."""
@@ -233,5 +227,5 @@ class ImageGenerationAgent:
             cache.get(session_id)
             return session_data[image_key]
         except KeyError:
-            logger.error('Error generating image')
-            return Imagedata(error='Error generating image, please try again.')
+            logger.error("Error generating image")
+            return Imagedata(error="Error generating image, please try again.")

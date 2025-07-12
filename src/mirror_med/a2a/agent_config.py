@@ -5,8 +5,8 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 
-from ..settings import get_settings
-from .hello_executor import HelloWorldAgentExecutor
+from mirror_med.a2a.hello_executor import HelloWorldAgentExecutor
+from mirror_med.settings import get_settings
 
 
 def create_a2a_app(base_url: str):
@@ -70,12 +70,12 @@ def _create_cached_app(base_url: str):
 def get_or_create_a2a_app(request):
     """Get or create an A2A app based on the request URL or settings."""
     settings = get_settings()
-    
+
     if settings.a2a_base_url:
         # Use configured base URL if provided
         base_url = settings.a2a_base_url
     else:
         # Dynamically determine base URL from request
         base_url = get_agent_url_from_request(request) + "/a2a"
-    
+
     return _create_cached_app(base_url)

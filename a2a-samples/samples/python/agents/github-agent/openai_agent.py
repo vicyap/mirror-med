@@ -7,8 +7,8 @@ def create_agent():
     tools = toolset.get_tools()
 
     return {
-        'tools': tools,
-        'system_prompt': """You are a GitHub agent that can help users query information about GitHub repositories and recent project updates.
+        "tools": tools,
+        "system_prompt": """You are a GitHub agent that can help users query information about GitHub repositories and recent project updates.
 
 Users will request information about:
 - Recent updates to their repositories

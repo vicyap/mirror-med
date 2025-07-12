@@ -6,9 +6,7 @@ import sys
 
 import click
 import uvicorn
-
 from dotenv import load_dotenv
-
 
 load_dotenv()
 
@@ -29,15 +27,14 @@ from agent_executor import HRAgentExecutor
 from api import hr_api
 from oauth2_middleware import OAuth2Middleware
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 
 @click.command()
-@click.option('--host', default='0.0.0.0')
-@click.option('--port_agent', default=10050)
-@click.option('--port_api', default=10051)
+@click.option("--host", default="0.0.0.0")
+@click.option("--port_agent", default=10050)
+@click.option("--port_api", default=10051)
 def main(host: str, port_agent: int, port_api: int):
     async def run_all():
         await asyncio.gather(
@@ -50,31 +47,29 @@ def main(host: str, port_agent: int, port_api: int):
 
 async def start_agent(host: str, port):
     agent_card = AgentCard(
-        name='Staff0 HR Agent',
-        description='This agent handles external verification requests about Staff0 employees made by third parties.',
-        url=f'http://{host}:{port}/',
-        version='0.1.0',
+        name="Staff0 HR Agent",
+        description="This agent handles external verification requests about Staff0 employees made by third parties.",
+        url=f"http://{host}:{port}/",
+        version="0.1.0",
         defaultInputModes=HRAgent.SUPPORTED_CONTENT_TYPES,
         defaultOutputModes=HRAgent.SUPPORTED_CONTENT_TYPES,
         capabilities=AgentCapabilities(streaming=True),
         skills=[
             AgentSkill(
-                id='is_active_employee',
-                name='Check Employment Status Tool',
-                description='Confirm whether a person is an active employee of the company.',
-                tags=['employment status'],
-                examples=[
-                    'Does John Doe with email jdoe@staff0.com work at Staff0?'
-                ],
+                id="is_active_employee",
+                name="Check Employment Status Tool",
+                description="Confirm whether a person is an active employee of the company.",
+                tags=["employment status"],
+                examples=["Does John Doe with email jdoe@staff0.com work at Staff0?"],
             )
         ],
         authentication=AgentAuthentication(
-            schemes=['oauth2'],
+            schemes=["oauth2"],
             credentials=json.dumps(
                 {
-                    'tokenUrl': f'https://{os.getenv("HR_AUTH0_DOMAIN")}/oauth/token',
-                    'scopes': {
-                        'read:employee_status': 'Allows confirming whether a person is an active employee of the company.'
+                    "tokenUrl": f"https://{os.getenv('HR_AUTH0_DOMAIN')}/oauth/token",
+                    "scopes": {
+                        "read:employee_status": "Allows confirming whether a person is an active employee of the company."
                     },
                 }
             ),
@@ -112,20 +107,18 @@ async def start_agent(host: str, port):
     app.add_middleware(
         OAuth2Middleware,
         agent_card=agent_card,
-        public_paths=['/.well-known/agent.json'],
+        public_paths=["/.well-known/agent.json"],
     )
 
-    logger.info(f'Starting HR Agent server on {host}:{port}')
+    logger.info(f"Starting HR Agent server on {host}:{port}")
     await uvicorn.Server(uvicorn.Config(app=app, host=host, port=port)).serve()
 
 
 async def start_api(host: str, port):
-    logger.info(f'Starting HR API server on {host}:{port}')
-    await uvicorn.Server(
-        uvicorn.Config(app=hr_api, host=host, port=port)
-    ).serve()
+    logger.info(f"Starting HR API server on {host}:{port}")
+    await uvicorn.Server(uvicorn.Config(app=hr_api, host=host, port=port)).serve()
 
 
 # this ensures that `main()` runs when using `uv run .`
-if not hasattr(sys, '_called_from_uvicorn'):
+if not hasattr(sys, "_called_from_uvicorn"):
     main()

@@ -20,7 +20,6 @@ from a2a.types import (
 from a2a.utils.message import new_agent_text_message
 from foundry_agent import FoundryCalendarAgent
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -33,9 +32,7 @@ class FoundryAgentExecutor(AgentExecutor):
     def __init__(self, card: AgentCard):
         self._card = card
         self._foundry_agent: FoundryCalendarAgent | None = None
-        self._active_threads: dict[
-            str, str
-        ] = {}  # context_id -> thread_id mapping
+        self._active_threads: dict[str, str] = {}  # context_id -> thread_id mapping
 
     async def _get_or_create_agent(self) -> FoundryCalendarAgent:
         """Get or create the Foundry calendar agent."""
@@ -51,9 +48,7 @@ class FoundryAgentExecutor(AgentExecutor):
             agent = await self._get_or_create_agent()
             thread = await agent.create_thread()
             self._active_threads[context_id] = thread.id
-            logger.info(
-                f'Created new thread {thread.id} for context {context_id}'
-            )
+            logger.info(f"Created new thread {thread.id} for context {context_id}")
 
         return self._active_threads[context_id]
 
@@ -76,7 +71,7 @@ class FoundryAgentExecutor(AgentExecutor):
             await task_updater.update_status(
                 TaskState.working,
                 message=new_agent_text_message(
-                    'Processing your request...', context_id=context_id
+                    "Processing your request...", context_id=context_id
                 ),
             )
 
@@ -87,25 +82,19 @@ class FoundryAgentExecutor(AgentExecutor):
             for response in responses:
                 await task_updater.update_status(
                     TaskState.working,
-                    message=new_agent_text_message(
-                        response, context_id=context_id
-                    ),
+                    message=new_agent_text_message(response, context_id=context_id),
                 )
 
             # Mark as complete
-            final_message = responses[-1] if responses else 'Task completed.'
+            final_message = responses[-1] if responses else "Task completed."
             await task_updater.complete(
-                message=new_agent_text_message(
-                    final_message, context_id=context_id
-                )
+                message=new_agent_text_message(final_message, context_id=context_id)
             )
 
         except Exception as e:
-            logger.error(f'Error processing request: {e}', exc_info=True)
+            logger.error(f"Error processing request: {e}", exc_info=True)
             await task_updater.failed(
-                message=new_agent_text_message(
-                    f'Error: {e!s}', context_id=context_id
-                )
+                message=new_agent_text_message(f"Error: {e!s}", context_id=context_id)
             )
 
     def _convert_parts_to_text(self, parts: list[Part]) -> str:
@@ -119,13 +108,13 @@ class FoundryAgentExecutor(AgentExecutor):
             elif isinstance(part, FilePart):
                 # For demo purposes, just indicate file presence
                 if isinstance(part.file, FileWithUri):
-                    text_parts.append(f'[File: {part.file.uri}]')
+                    text_parts.append(f"[File: {part.file.uri}]")
                 elif isinstance(part.file, FileWithBytes):
-                    text_parts.append(f'[File: {len(part.file.bytes)} bytes]')
+                    text_parts.append(f"[File: {len(part.file.bytes)} bytes]")
             else:
-                logger.warning(f'Unsupported part type: {type(part)}')
+                logger.warning(f"Unsupported part type: {type(part)}")
 
-        return ' '.join(text_parts)
+        return " ".join(text_parts)
 
     async def execute(
         self,
@@ -133,7 +122,7 @@ class FoundryAgentExecutor(AgentExecutor):
         event_queue: EventQueue,
     ):
         """Execute the agent request."""
-        logger.info(f'Executing request for context: {context.context_id}')
+        logger.info(f"Executing request for context: {context.context_id}")
 
         # Create task updater
         updater = TaskUpdater(event_queue, context.task_id, context.context_id)
@@ -152,13 +141,11 @@ class FoundryAgentExecutor(AgentExecutor):
             updater,
         )
 
-        logger.debug(
-            f'Foundry agent execution completed for {context.context_id}'
-        )
+        logger.debug(f"Foundry agent execution completed for {context.context_id}")
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue):
         """Cancel the ongoing execution."""
-        logger.info(f'Cancelling execution for context: {context.context_id}')
+        logger.info(f"Cancelling execution for context: {context.context_id}")
 
         # For now, just log cancellation
         # In a full implementation, you might want to:
@@ -169,7 +156,7 @@ class FoundryAgentExecutor(AgentExecutor):
         updater = TaskUpdater(event_queue, context.task_id, context.context_id)
         await updater.failed(
             message=new_agent_text_message(
-                'Task cancelled by user', context_id=context.context_id
+                "Task cancelled by user", context_id=context.context_id
             )
         )
 
@@ -179,7 +166,7 @@ class FoundryAgentExecutor(AgentExecutor):
             await self._foundry_agent.cleanup_agent()
             self._foundry_agent = None
         self._active_threads.clear()
-        logger.info('Foundry agent executor cleaned up')
+        logger.info("Foundry agent executor cleaned up")
 
 
 def create_foundry_agent_executor(card: AgentCard) -> FoundryAgentExecutor:

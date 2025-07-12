@@ -8,7 +8,6 @@ import click
 import sqlalchemy
 import sqlalchemy.ext.asyncio
 import uvicorn
-
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import DatabaseTaskStore, InMemoryTaskStore
@@ -22,7 +21,6 @@ from agent_executor import ADKAgentExecutor
 from dotenv import load_dotenv
 from google.cloud.alloydbconnector import AsyncConnector
 from starlette.applications import Starlette
-
 
 load_dotenv()
 

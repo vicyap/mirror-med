@@ -1,7 +1,6 @@
 import uuid
 
 import mesop as me
-
 from a2a.types import Message, Part, Role, TextPart
 from state.host_agent_service import (
     ListConversations,
@@ -18,8 +17,8 @@ from .form_render import form_sent, is_form, render_form
 class PageState:
     """Local Page State"""
 
-    conversation_id: str = ''
-    message_content: str = ''
+    conversation_id: str = ""
+    message_content: str = ""
 
 
 def on_blur(e: me.InputBlurEvent):
@@ -28,7 +27,7 @@ def on_blur(e: me.InputBlurEvent):
     state.message_content = e.value
 
 
-async def send_message(message: str, message_id: str = ''):
+async def send_message(message: str, message_id: str = ""):
     state = me.state(PageState)
     app_state = me.state(AppState)
     c = next(
@@ -40,7 +39,7 @@ async def send_message(message: str, message_id: str = ''):
         None,
     )
     if not c:
-        print('Conversation id ', state.conversation_id, ' not found')
+        print("Conversation id ", state.conversation_id, " not found")
     request = Message(
         messageId=message_id,
         contextId=state.conversation_id,
@@ -71,7 +70,7 @@ async def send_message_enter(e: me.InputEnterEvent):  # pylint: disable=unused-a
     state.message_content = e.value
     app_state = me.state(AppState)
     message_id = str(uuid.uuid4())
-    app_state.background_tasks[message_id] = ''
+    app_state.background_tasks[message_id] = ""
     yield
     await send_message(state.message_content, message_id)
     yield
@@ -83,7 +82,7 @@ async def send_message_button(e: me.ClickEvent):  # pylint: disable=unused-argum
     state = me.state(PageState)
     app_state = me.state(AppState)
     message_id = str(uuid.uuid4())
-    app_state.background_tasks[message_id] = ''
+    app_state.background_tasks[message_id] = ""
     await send_message(state.message_content, message_id)
     yield
 
@@ -93,14 +92,14 @@ def conversation():
     """Conversation component"""
     page_state = me.state(PageState)
     app_state = me.state(AppState)
-    if 'conversation_id' in me.query_params:
-        page_state.conversation_id = me.query_params['conversation_id']
+    if "conversation_id" in me.query_params:
+        page_state.conversation_id = me.query_params["conversation_id"]
         app_state.current_conversation_id = page_state.conversation_id
     with me.box(
         style=me.Style(
-            display='flex',
-            justify_content='space-between',
-            flex_direction='column',
+            display="flex",
+            justify_content="space-between",
+            flex_direction="column",
         )
     ):
         for message in app_state.messages:
@@ -111,7 +110,7 @@ def conversation():
                     StateMessage(
                         message_id=message.message_id,
                         role=message.role,
-                        content=[('Form submitted', 'text/plain')],
+                        content=[("Form submitted", "text/plain")],
                     ),
                     message.message_id,
                 )
@@ -120,22 +119,22 @@ def conversation():
 
         with me.box(
             style=me.Style(
-                display='flex',
-                flex_direction='row',
+                display="flex",
+                flex_direction="row",
                 gap=5,
-                align_items='center',
+                align_items="center",
                 min_width=500,
-                width='100%',
+                width="100%",
             )
         ):
             me.input(
-                label='How can I help you?',
+                label="How can I help you?",
                 on_blur=on_blur,
                 on_enter=send_message_enter,
-                style=me.Style(min_width='80vw'),
+                style=me.Style(min_width="80vw"),
             )
             with me.content_button(
-                type='flat',
+                type="flat",
                 on_click=send_message_button,
             ):
-                me.icon(icon='send')
+                me.icon(icon="send")

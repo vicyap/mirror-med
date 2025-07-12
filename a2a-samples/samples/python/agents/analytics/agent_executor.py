@@ -34,9 +34,7 @@ class ChartGenerationAgentExecutor(AgentExecutor):
         try:
             result = self.agent.invoke(query, context.context_id)
         except Exception as e:
-            raise ServerError(
-                error=ValueError(f'Error invoking agent: {e}')
-            ) from e
+            raise ServerError(error=ValueError(f"Error invoking agent: {e}")) from e
 
         data = self.agent.get_image_data(
             session_id=context.context_id, image_key=result.raw
@@ -58,9 +56,7 @@ class ChartGenerationAgentExecutor(AgentExecutor):
             parts = [
                 Part(
                     root=TextPart(
-                        text=data.error
-                        if data
-                        else 'Failed to generate chart image.'
+                        text=data.error if data else "Failed to generate chart image."
                     ),
                 )
             ]
@@ -69,7 +65,7 @@ class ChartGenerationAgentExecutor(AgentExecutor):
             completed_task(
                 context.task_id,
                 context.context_id,
-                [new_artifact(parts, f'chart_{context.task_id}')],
+                [new_artifact(parts, f"chart_{context.task_id}")],
                 [context.message],
             )
         )

@@ -43,24 +43,22 @@ class ReimbursementAgentExecutor(AgentExecutor):
         # invoke the underlying agent, using streaming results. The streams
         # now are update events.
         async for item in self.agent.stream(query, task.contextId):
-            is_task_complete = item['is_task_complete']
+            is_task_complete = item["is_task_complete"]
             artifacts = None
             if not is_task_complete:
                 await updater.update_status(
                     TaskState.working,
-                    new_agent_text_message(
-                        item['updates'], task.contextId, task.id
-                    ),
+                    new_agent_text_message(item["updates"], task.contextId, task.id),
                 )
                 continue
             # If the response is a dictionary, assume its a form
-            if isinstance(item['content'], dict):
+            if isinstance(item["content"], dict):
                 # Verify it is a valid form
                 if (
-                    'response' in item['content']
-                    and 'result' in item['content']['response']
+                    "response" in item["content"]
+                    and "result" in item["content"]["response"]
                 ):
-                    data = json.loads(item['content']['response']['result'])
+                    data = json.loads(item["content"]["response"]["result"])
                     await updater.update_status(
                         TaskState.input_required,
                         new_agent_parts_message(
@@ -74,7 +72,7 @@ class ReimbursementAgentExecutor(AgentExecutor):
                 await updater.update_status(
                     TaskState.failed,
                     new_agent_text_message(
-                        'Reaching an unexpected state',
+                        "Reaching an unexpected state",
                         task.contextId,
                         task.id,
                     ),
@@ -83,7 +81,7 @@ class ReimbursementAgentExecutor(AgentExecutor):
                 break
             # Emit the appropriate events
             await updater.add_artifact(
-                [Part(root=TextPart(text=item['content']))], name='form'
+                [Part(root=TextPart(text=item["content"]))], name="form"
             )
             await updater.complete()
             break

@@ -8,7 +8,6 @@ import json
 import logging
 import os
 import time
-
 from typing import Any
 
 from azure.ai.agents import AgentsClient
@@ -22,7 +21,6 @@ from azure.ai.agents.models import (
 )
 from azure.identity import DefaultAzureCredential
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +30,7 @@ class FoundryCalendarAgent:
     """
 
     def __init__(self):
-        self.endpoint = os.environ['AZURE_AI_FOUNDRY_PROJECT_ENDPOINT']
+        self.endpoint = os.environ["AZURE_AI_FOUNDRY_PROJECT_ENDPOINT"]
         self.credential = DefaultAzureCredential()
         self.agent: Agent | None = None
         self.threads: dict[str, str] = {}  # thread_id -> thread_id mapping
@@ -51,12 +49,12 @@ class FoundryCalendarAgent:
 
         with self._get_client() as client:
             self.agent = client.create_agent(
-                model=os.environ['AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME'],
-                name='foundry-calendar-agent',
+                model=os.environ["AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME"],
+                name="foundry-calendar-agent",
                 instructions=self._get_calendar_instructions(),
                 tools=self._get_calendar_tools(),
             )
-            logger.info(f'Created AI Foundry agent: {self.agent.id}')
+            logger.info(f"Created AI Foundry agent: {self.agent.id}")
             return self.agent
 
     def _get_calendar_instructions(self) -> str:
@@ -85,48 +83,48 @@ When users ask about availability, scheduling, or calendar management, use your 
         """Define calendar tools for the agent (simulated for demo)."""
         return [
             {
-                'type': 'function',
-                'function': {
-                    'name': 'check_availability',
-                    'description': "Check if a time slot is available in the user's calendar",
-                    'parameters': {
-                        'type': 'object',
-                        'properties': {
-                            'start_time': {
-                                'type': 'string',
-                                'description': 'Start time in RFC3339 format',
+                "type": "function",
+                "function": {
+                    "name": "check_availability",
+                    "description": "Check if a time slot is available in the user's calendar",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "start_time": {
+                                "type": "string",
+                                "description": "Start time in RFC3339 format",
                             },
-                            'end_time': {
-                                'type': 'string',
-                                'description': 'End time in RFC3339 format',
+                            "end_time": {
+                                "type": "string",
+                                "description": "End time in RFC3339 format",
                             },
-                            'calendar_id': {
-                                'type': 'string',
-                                'description': "Calendar ID (defaults to 'primary')",
-                                'default': 'primary',
+                            "calendar_id": {
+                                "type": "string",
+                                "description": "Calendar ID (defaults to 'primary')",
+                                "default": "primary",
                             },
                         },
-                        'required': ['start_time', 'end_time'],
+                        "required": ["start_time", "end_time"],
                     },
                 },
             },
             {
-                'type': 'function',
-                'function': {
-                    'name': 'get_upcoming_events',
-                    'description': "Get upcoming events from the user's calendar",
-                    'parameters': {
-                        'type': 'object',
-                        'properties': {
-                            'max_results': {
-                                'type': 'integer',
-                                'description': 'Maximum number of events to return',
-                                'default': 10,
+                "type": "function",
+                "function": {
+                    "name": "get_upcoming_events",
+                    "description": "Get upcoming events from the user's calendar",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "max_results": {
+                                "type": "integer",
+                                "description": "Maximum number of events to return",
+                                "default": 10,
                             },
-                            'time_range_hours': {
-                                'type': 'integer',
-                                'description': 'Number of hours from now to check',
-                                'default': 24,
+                            "time_range_hours": {
+                                "type": "integer",
+                                "description": "Number of hours from now to check",
+                                "default": 24,
                             },
                         },
                     },
@@ -143,23 +141,21 @@ When users ask about availability, scheduling, or calendar management, use your 
         with self._get_client() as client:
             thread = client.threads.create()
             self.threads[thread.id] = thread.id
-            logger.info(f'Created thread: {thread.id}')
+            logger.info(f"Created thread: {thread.id}")
             return thread
 
     async def send_message(
-        self, thread_id: str, content: str, role: str = 'user'
+        self, thread_id: str, content: str, role: str = "user"
     ) -> ThreadMessage:
         """Send a message to the conversation thread."""
         with self._get_client() as client:
             message = client.messages.create(
                 thread_id=thread_id, role=role, content=content
             )
-            logger.info(f'Created message in thread {thread_id}: {message.id}')
+            logger.info(f"Created message in thread {thread_id}: {message.id}")
             return message
 
-    async def run_conversation(
-        self, thread_id: str, user_message: str
-    ) -> list[str]:
+    async def run_conversation(self, thread_id: str, user_message: str) -> list[str]:
         """Run a complete conversation cycle with the agent."""
         if not self.agent:
             await self.create_agent()
@@ -169,49 +165,43 @@ When users ask about availability, scheduling, or calendar management, use your 
 
         # Create and run the agent
         with self._get_client() as client:
-            run = client.runs.create(
-                thread_id=thread_id, agent_id=self.agent.id
-            )
+            run = client.runs.create(thread_id=thread_id, agent_id=self.agent.id)
 
             # Poll until completion
             max_iterations = 30  # Prevent infinite loops
             iterations = 0
 
             while (
-                run.status in ['queued', 'in_progress', 'requires_action']
+                run.status in ["queued", "in_progress", "requires_action"]
                 and iterations < max_iterations
             ):
                 iterations += 1
                 time.sleep(1)
                 run = client.runs.get(thread_id=thread_id, run_id=run.id)
-                logger.debug(
-                    f'Run status: {run.status} (iteration {iterations})'
-                )
+                logger.debug(f"Run status: {run.status} (iteration {iterations})")
 
-                if run.status == 'failed':
-                    logger.error(f'Run failed during polling: {run.last_error}')
+                if run.status == "failed":
+                    logger.error(f"Run failed during polling: {run.last_error}")
                     break
 
                 # Handle tool calls if needed
-                if run.status == 'requires_action':
+                if run.status == "requires_action":
                     try:
                         await self._handle_tool_calls(run, thread_id)
                         # Get updated run status after tool submission
-                        run = client.runs.get(
-                            thread_id=thread_id, run_id=run.id
-                        )
+                        run = client.runs.get(thread_id=thread_id, run_id=run.id)
                     except Exception as e:
-                        logger.error(f'Error handling tool calls: {e}')
+                        logger.error(f"Error handling tool calls: {e}")
                         # If tool handling fails, mark the run as failed
-                        return [f'Error handling tool calls: {e!s}']
+                        return [f"Error handling tool calls: {e!s}"]
 
-            if run.status == 'failed':
-                logger.error(f'Run failed: {run.last_error}')
-                return [f'Error: {run.last_error}']
+            if run.status == "failed":
+                logger.error(f"Run failed: {run.last_error}")
+                return [f"Error: {run.last_error}"]
 
             if iterations >= max_iterations:
-                logger.error(f'Run timed out after {max_iterations} iterations')
-                return ['Error: Request timed out']
+                logger.error(f"Run timed out after {max_iterations} iterations")
+                return ["Error: Request timed out"]
 
             # Get response messages
             messages = client.messages.list(
@@ -220,33 +210,33 @@ When users ask about availability, scheduling, or calendar management, use your 
 
             responses = []
             for msg in messages:
-                if msg.role == 'assistant' and msg.text_messages:
+                if msg.role == "assistant" and msg.text_messages:
                     for text_msg in msg.text_messages:
                         responses.append(text_msg.text.value)
                     break  # Only get the latest assistant response
 
-            return responses if responses else ['No response received']
+            return responses if responses else ["No response received"]
 
     async def _handle_tool_calls(self, run: ThreadRun, thread_id: str):
         """Handle tool calls during agent execution."""
-        logger.info('Handling tool calls (simulated for demo)')
+        logger.info("Handling tool calls (simulated for demo)")
 
-        if not hasattr(run, 'required_action') or not run.required_action:
-            logger.warning('No required action found in run')
+        if not hasattr(run, "required_action") or not run.required_action:
+            logger.warning("No required action found in run")
             return
 
         required_action = run.required_action
         if (
-            not hasattr(required_action, 'submit_tool_outputs')
+            not hasattr(required_action, "submit_tool_outputs")
             or not required_action.submit_tool_outputs
         ):
-            logger.warning('No tool outputs required')
+            logger.warning("No tool outputs required")
             return
 
         try:
             tool_calls = required_action.submit_tool_outputs.tool_calls
             if not tool_calls:
-                logger.warning('No tool calls found in required action')
+                logger.warning("No tool calls found in required action")
                 return
 
             tool_outputs = []
@@ -257,57 +247,55 @@ When users ask about availability, scheduling, or calendar management, use your 
                 arguments = tool_call.function.arguments
 
                 logger.info(
-                    f'Processing tool call: {function_name} with args: {arguments}'
+                    f"Processing tool call: {function_name} with args: {arguments}"
                 )
-                logger.debug(f'Tool call ID: {tool_call.id}')
+                logger.debug(f"Tool call ID: {tool_call.id}")
 
                 # Simulate calendar tool responses
-                if function_name == 'check_availability':
+                if function_name == "check_availability":
                     output = {
-                        'available': True,
-                        'message': 'The requested time slot appears to be available.',
+                        "available": True,
+                        "message": "The requested time slot appears to be available.",
                     }
-                elif function_name == 'get_upcoming_events':
+                elif function_name == "get_upcoming_events":
                     output = {
-                        'events': [
+                        "events": [
                             {
-                                'title': 'Team Meeting',
-                                'start': '2025-05-27T14:00:00Z',
-                                'end': '2025-05-27T15:00:00Z',
+                                "title": "Team Meeting",
+                                "start": "2025-05-27T14:00:00Z",
+                                "end": "2025-05-27T15:00:00Z",
                             },
                             {
-                                'title': 'Project Review',
-                                'start': '2025-05-27T16:00:00Z',
-                                'end': '2025-05-27T17:00:00Z',
+                                "title": "Project Review",
+                                "start": "2025-05-27T16:00:00Z",
+                                "end": "2025-05-27T17:00:00Z",
                             },
                         ]
                     }
                 else:
-                    output = {'error': f'Unknown function: {function_name}'}
+                    output = {"error": f"Unknown function: {function_name}"}
 
                 # Ensure we have a valid tool_call_id
-                if not hasattr(tool_call, 'id') or not tool_call.id:
-                    logger.error(f'Tool call missing ID: {tool_call}')
+                if not hasattr(tool_call, "id") or not tool_call.id:
+                    logger.error(f"Tool call missing ID: {tool_call}")
                     continue
 
                 tool_outputs.append(
                     {
-                        'tool_call_id': tool_call.id,
-                        'output': json.dumps(
-                            output
-                        ),  # Ensure output is JSON string
+                        "tool_call_id": tool_call.id,
+                        "output": json.dumps(output),  # Ensure output is JSON string
                     }
                 )
 
             if not tool_outputs:
-                logger.error('No valid tool outputs generated')
+                logger.error("No valid tool outputs generated")
                 return
 
-            logger.debug(f'Tool outputs to submit: {tool_outputs}')
+            logger.debug(f"Tool outputs to submit: {tool_outputs}")
 
         except Exception as e:
-            logger.error(f'Error processing tool calls: {e}')
-            logger.error(f'Required action structure: {required_action}')
+            logger.error(f"Error processing tool calls: {e}")
+            logger.error(f"Required action structure: {required_action}")
             raise
 
         # Submit the tool outputs
@@ -318,37 +306,33 @@ When users ask about availability, scheduling, or calendar management, use your 
                 for output in tool_outputs:
                     formatted_outputs.append(
                         ToolOutput(
-                            tool_call_id=output['tool_call_id'],
-                            output=output['output'],
+                            tool_call_id=output["tool_call_id"],
+                            output=output["output"],
                         )
                     )
 
-                logger.debug(
-                    f'Submitting formatted tool outputs: {formatted_outputs}'
-                )
+                logger.debug(f"Submitting formatted tool outputs: {formatted_outputs}")
 
                 client.runs.submit_tool_outputs(
                     thread_id=thread_id,
                     run_id=run.id,
                     tool_outputs=formatted_outputs,
                 )
-                logger.info(f'Submitted {len(formatted_outputs)} tool outputs')
+                logger.info(f"Submitted {len(formatted_outputs)} tool outputs")
             except Exception as e:
-                logger.error(f'Failed to submit tool outputs: {e}')
-                logger.error(f'Raw tool outputs structure: {tool_outputs}')
+                logger.error(f"Failed to submit tool outputs: {e}")
+                logger.error(f"Raw tool outputs structure: {tool_outputs}")
                 # Try submitting without ToolOutput wrapper as fallback
                 try:
-                    logger.info(
-                        'Trying fallback submission with raw dict format'
-                    )
+                    logger.info("Trying fallback submission with raw dict format")
                     client.runs.submit_tool_outputs(
                         thread_id=thread_id,
                         run_id=run.id,
                         tool_outputs=tool_outputs,
                     )
-                    logger.info('Fallback submission successful')
+                    logger.info("Fallback submission successful")
                 except Exception as e2:
-                    logger.error(f'Fallback submission also failed: {e2}')
+                    logger.error(f"Fallback submission also failed: {e2}")
                     raise e
 
     async def cleanup_agent(self):
@@ -356,7 +340,7 @@ When users ask about availability, scheduling, or calendar management, use your 
         if self.agent:
             with self._get_client() as client:
                 client.delete_agent(self.agent.id)
-                logger.info(f'Deleted agent: {self.agent.id}')
+                logger.info(f"Deleted agent: {self.agent.id}")
                 self.agent = None
 
 
@@ -378,20 +362,20 @@ async def demo_agent_interaction():
 
         # Example interactions
         test_messages = [
-            'Hello! Can you help me with my calendar?',
-            'Am I free tomorrow from 2pm to 3pm?',
-            'What meetings do I have coming up today?',
+            "Hello! Can you help me with my calendar?",
+            "Am I free tomorrow from 2pm to 3pm?",
+            "What meetings do I have coming up today?",
         ]
 
         for message in test_messages:
-            print(f'\nUser: {message}')
+            print(f"\nUser: {message}")
             responses = await agent.run_conversation(thread.id, message)
             for response in responses:
-                print(f'Assistant: {response}')
+                print(f"Assistant: {response}")
 
     finally:
         await agent.cleanup_agent()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(demo_agent_interaction())

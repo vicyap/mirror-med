@@ -15,7 +15,6 @@ from a2a.utils import (
 )
 from agent import SemanticKernelMCPAgent
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -37,7 +36,7 @@ class SemanticKernelMCPAgentExecutor(AgentExecutor):
             await self.agent.initialize_playwright()
             self._initialized = True
             logger.info("MCP Agent initialized successfully")
-        
+
         query = context.get_user_input()
         task = context.current_task
         if not task:
@@ -45,9 +44,9 @@ class SemanticKernelMCPAgentExecutor(AgentExecutor):
             await event_queue.enqueue_event(task)
 
         async for partial in self.agent.stream(query, task.contextId):
-            require_input = partial['require_user_input']
-            is_done = partial['is_task_complete']
-            text_content = partial['content']
+            require_input = partial["require_user_input"]
+            is_done = partial["is_task_complete"]
+            text_content = partial["content"]
 
             if require_input:
                 await event_queue.enqueue_event(
@@ -73,8 +72,8 @@ class SemanticKernelMCPAgentExecutor(AgentExecutor):
                         taskId=task.id,
                         lastChunk=True,
                         artifact=new_text_artifact(
-                            name='current_result',
-                            description='Result of request to agent.',
+                            name="current_result",
+                            description="Result of request to agent.",
                             text=text_content,
                         ),
                     )
@@ -104,7 +103,5 @@ class SemanticKernelMCPAgentExecutor(AgentExecutor):
                     )
                 )
 
-    async def cancel(
-        self, context: RequestContext, event_queue: EventQueue
-    ) -> None:
-        raise Exception('cancel not supported')
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
+        raise Exception("cancel not supported")

@@ -1,7 +1,6 @@
 # type: ignore
 
 import uuid
-
 from collections.abc import AsyncGenerator
 
 from google.adk.agents import Agent
@@ -21,8 +20,8 @@ class AgentRunner:
 
     def __init__(
         self,
-        user_id: str = 'user_1',
-        app_name: str = 'A2A-MCP',
+        user_id: str = "user_1",
+        app_name: str = "A2A-MCP",
     ):
         self.session_service = InMemorySessionService()
         self.session = None
@@ -51,7 +50,7 @@ class AgentRunner:
                 user_id=self.user_id,
                 session_id=session_id,
             )
-        content = types.Content(role='user', parts=[types.Part(text=query)])
+        content = types.Content(role="user", parts=[types.Part(text=query)])
 
         async for event in runner.run_async(
             user_id=self.user_id,
@@ -59,35 +58,32 @@ class AgentRunner:
             new_message=content,
         ):
             if event.is_final_response():
-                response = ''
+                response = ""
                 if (
                     event.content
                     and event.content.parts
                     and event.content.parts[0].text
                 ):
-                    response = '\n'.join(
+                    response = "\n".join(
                         [p.text for p in event.content.parts if p.text]
                     )
                 elif (
                     event.content
                     and event.content.parts
-                    and any(
-                        True for p in event.content.parts if p.function_response
-                    )
+                    and any(True for p in event.content.parts if p.function_response)
                 ):
                     response = next(
-                        p.function_response.model_dump()
-                        for p in event.content.parts
+                        p.function_response.model_dump() for p in event.content.parts
                     )
                 else:
-                    response = f'Error in running agent: {agent.name}'
+                    response = f"Error in running agent: {agent.name}"
                 yield {
-                    'type': 'final_result',
-                    'response': response,
+                    "type": "final_result",
+                    "response": response,
                 }
             else:
                 yield {
-                    'is_task_complete': False,
-                    'require_user_input': False,
-                    'content': f'{agent.name}: Processing request...',
+                    "is_task_complete": False,
+                    "require_user_input": False,
+                    "content": f"{agent.name}: Processing request...",
                 }

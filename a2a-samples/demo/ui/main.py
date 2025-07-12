@@ -7,13 +7,16 @@ import os
 import sys
 
 # Add the project root to the Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'samples', 'python')))
+sys.path.append(
+    os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "samples", "python")
+    )
+)
 
 from contextlib import asynccontextmanager
 
 import httpx
 import mesop as me
-
 from components.api_key_dialog import api_key_dialog
 from components.page_scaffold import page_scaffold
 from dotenv import load_dotenv
@@ -29,7 +32,6 @@ from service.server.server import ConversationServer
 from state import host_agent_service
 from state.state import AppState
 
-
 load_dotenv()
 
 
@@ -37,17 +39,15 @@ def on_load(e: me.LoadEvent):  # pylint: disable=unused-argument
     """On load event"""
     state = me.state(AppState)
     me.set_theme_mode(state.theme_mode)
-    if 'conversation_id' in me.query_params:
-        state.current_conversation_id = me.query_params['conversation_id']
+    if "conversation_id" in me.query_params:
+        state.current_conversation_id = me.query_params["conversation_id"]
     else:
-        state.current_conversation_id = ''
+        state.current_conversation_id = ""
 
     # check if the API key is set in the environment
     # and if the user is using Vertex AI
-    uses_vertex_ai = (
-        os.getenv('GOOGLE_GENAI_USE_VERTEXAI', '').upper() == 'TRUE'
-    )
-    api_key = os.getenv('GOOGLE_API_KEY', '')
+    uses_vertex_ai = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").upper() == "TRUE"
+    api_key = os.getenv("GOOGLE_API_KEY", "")
 
     if uses_vertex_ai:
         state.uses_vertex_ai = True
@@ -61,14 +61,14 @@ def on_load(e: me.LoadEvent):  # pylint: disable=unused-argument
 # Policy to allow the lit custom element to load
 security_policy = me.SecurityPolicy(
     allowed_script_srcs=[
-        'https://cdn.jsdelivr.net',
+        "https://cdn.jsdelivr.net",
     ]
 )
 
 
 @me.page(
-    path='/',
-    title='Chat',
+    path="/",
+    title="Chat",
     on_load=on_load,
     security_policy=security_policy,
 )
@@ -82,8 +82,8 @@ def home_page():
 
 
 @me.page(
-    path='/agents',
-    title='Agents',
+    path="/agents",
+    title="Agents",
     on_load=on_load,
     security_policy=security_policy,
 )
@@ -94,8 +94,8 @@ def another_page():
 
 
 @me.page(
-    path='/conversation',
-    title='Conversation',
+    path="/conversation",
+    title="Conversation",
     on_load=on_load,
     security_policy=security_policy,
 )
@@ -106,8 +106,8 @@ def chat_page():
 
 
 @me.page(
-    path='/event_list',
-    title='Event List',
+    path="/event_list",
+    title="Event List",
     on_load=on_load,
     security_policy=security_policy,
 )
@@ -118,8 +118,8 @@ def event_page():
 
 
 @me.page(
-    path='/settings',
-    title='Settings',
+    path="/settings",
+    title="Settings",
     on_load=on_load,
     security_policy=security_policy,
 )
@@ -130,8 +130,8 @@ def settings_page():
 
 
 @me.page(
-    path='/task_list',
-    title='Task List',
+    path="/task_list",
+    title="Task List",
     on_load=on_load,
     security_policy=security_policy,
 )
@@ -173,11 +173,9 @@ async def lifespan(app: FastAPI):
     agent_server = ConversationServer(app, httpx_client_wrapper())
     app.openapi_schema = None
     app.mount(
-        '/',
+        "/",
         WSGIMiddleware(
-            me.create_wsgi_app(
-                debug_mode=os.environ.get('DEBUG_MODE', '') == 'true'
-            )
+            me.create_wsgi_app(debug_mode=os.environ.get("DEBUG_MODE", "") == "true")
         ),
     )
     app.setup()
@@ -185,17 +183,17 @@ async def lifespan(app: FastAPI):
     await httpx_client_wrapper.stop()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import uvicorn
 
     app = FastAPI(lifespan=lifespan)
 
     # Setup the connection details, these should be set in the environment
-    host = os.environ.get('A2A_UI_HOST', '0.0.0.0')
-    port = int(os.environ.get('A2A_UI_PORT', '12000'))
+    host = os.environ.get("A2A_UI_HOST", "0.0.0.0")
+    port = int(os.environ.get("A2A_UI_PORT", "12000"))
 
     # Set the client to talk to the server
-    host_agent_service.server_url = f'http://{host}:{port}'
+    host_agent_service.server_url = f"http://{host}:{port}"
 
     uvicorn.run(
         app,

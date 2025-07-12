@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, TypeAdapter
 
 
 class JSONRPCMessage(BaseModel):
-    jsonrpc: Literal['2.0'] = '2.0'
+    jsonrpc: Literal["2.0"] = "2.0"
     id: int | str | None = Field(default_factory=lambda: uuid4().hex)
 
 
@@ -33,26 +33,26 @@ class JSONRPCResponse(JSONRPCMessage):
 class Conversation(BaseModel):
     conversation_id: str
     is_active: bool
-    name: str = ''
+    name: str = ""
     task_ids: list[str] = Field(default_factory=list)
     messages: list[Message] = Field(default_factory=list)
 
 
 class Event(BaseModel):
     id: str
-    actor: str = ''
+    actor: str = ""
     # TODO: Extend to support internal concepts for models, like function calls.
     content: Message
     timestamp: float
 
 
 class SendMessageRequest(JSONRPCRequest):
-    method: Literal['message/send'] = 'message/send'
+    method: Literal["message/send"] = "message/send"
     params: Message
 
 
 class ListMessageRequest(JSONRPCRequest):
-    method: Literal['message/list'] = 'message/list'
+    method: Literal["message/list"] = "message/list"
     # This is the conversation id
     params: str
 
@@ -71,7 +71,7 @@ class SendMessageResponse(JSONRPCResponse):
 
 
 class GetEventRequest(JSONRPCRequest):
-    method: Literal['events/get'] = 'events/get'
+    method: Literal["events/get"] = "events/get"
 
 
 class GetEventResponse(JSONRPCResponse):
@@ -79,7 +79,7 @@ class GetEventResponse(JSONRPCResponse):
 
 
 class ListConversationRequest(JSONRPCRequest):
-    method: Literal['conversation/list'] = 'conversation/list'
+    method: Literal["conversation/list"] = "conversation/list"
 
 
 class ListConversationResponse(JSONRPCResponse):
@@ -87,7 +87,7 @@ class ListConversationResponse(JSONRPCResponse):
 
 
 class PendingMessageRequest(JSONRPCRequest):
-    method: Literal['message/pending'] = 'message/pending'
+    method: Literal["message/pending"] = "message/pending"
 
 
 class PendingMessageResponse(JSONRPCResponse):
@@ -95,7 +95,7 @@ class PendingMessageResponse(JSONRPCResponse):
 
 
 class CreateConversationRequest(JSONRPCRequest):
-    method: Literal['conversation/create'] = 'conversation/create'
+    method: Literal["conversation/create"] = "conversation/create"
 
 
 class CreateConversationResponse(JSONRPCResponse):
@@ -103,7 +103,7 @@ class CreateConversationResponse(JSONRPCResponse):
 
 
 class ListTaskRequest(JSONRPCRequest):
-    method: Literal['task/list'] = 'task/list'
+    method: Literal["task/list"] = "task/list"
 
 
 class ListTaskResponse(JSONRPCResponse):
@@ -111,7 +111,7 @@ class ListTaskResponse(JSONRPCResponse):
 
 
 class RegisterAgentRequest(JSONRPCRequest):
-    method: Literal['agent/register'] = 'agent/register'
+    method: Literal["agent/register"] = "agent/register"
     # This is the base url of the agent card
     params: str | None = None
 
@@ -121,7 +121,7 @@ class RegisterAgentResponse(JSONRPCResponse):
 
 
 class ListAgentRequest(JSONRPCRequest):
-    method: Literal['agent/list'] = 'agent/list'
+    method: Literal["agent/list"] = "agent/list"
 
 
 class ListAgentResponse(JSONRPCResponse):
@@ -131,7 +131,7 @@ class ListAgentResponse(JSONRPCResponse):
 AgentRequest = TypeAdapter(
     Annotated[
         SendMessageRequest | ListConversationRequest,
-        Field(discriminator='method'),
+        Field(discriminator="method"),
     ]
 )
 
@@ -144,10 +144,10 @@ class AgentClientHTTPError(AgentClientError):
     def __init__(self, status_code: int, message: str):
         self.status_code = status_code
         self.message = message
-        super().__init__(f'HTTP Error {status_code}: {message}')
+        super().__init__(f"HTTP Error {status_code}: {message}")
 
 
 class AgentClientJSONError(AgentClientError):
     def __init__(self, message: str):
         self.message = message
-        super().__init__(f'JSON Error: {message}')
+        super().__init__(f"JSON Error: {message}")

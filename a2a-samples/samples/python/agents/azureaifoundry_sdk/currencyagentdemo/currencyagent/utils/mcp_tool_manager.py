@@ -23,9 +23,9 @@ class MCPToolManager:
             tools = await self._connection.list_tools()
             self._tools_cache = {
                 tool.name: {
-                    'name': tool.name,
-                    'description': tool.description,
-                    'input_schema': tool.input_schema,
+                    "name": tool.name,
+                    "description": tool.description,
+                    "input_schema": tool.input_schema,
                 }
                 for tool in tools
             }
@@ -48,12 +48,12 @@ class MCPToolManager:
                 return result
             except Exception as e:
                 # logger.error(f"Error executing tool '{tool_name}': {e}")
-                return {'error': str(e)}
+                return {"error": str(e)}
 
         # Return the async function directly - we'll handle the event loop in the caller
         async_tool_func.__name__ = tool_name
         async_tool_func.__doc__ = self._tools_cache.get(tool_name, {}).get(
-            'description', f'MCP tool: {tool_name}'
+            "description", f"MCP tool: {tool_name}"
         )
         return async_tool_func
 

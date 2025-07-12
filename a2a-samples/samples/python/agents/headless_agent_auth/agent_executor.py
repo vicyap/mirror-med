@@ -30,8 +30,8 @@ class HRAgentExecutor(AgentExecutor):
             await event_queue.enqueue_event(task)
         # invoke the underlying agent, using streaming results
         async for event in self.agent.stream(query, task.contextId):
-            task_state = TaskState(event['task_state'])
-            if event['is_task_complete']:
+            task_state = TaskState(event["task_state"])
+            if event["is_task_complete"]:
                 await event_queue.enqueue_event(
                     TaskArtifactUpdateEvent(
                         append=False,
@@ -39,9 +39,9 @@ class HRAgentExecutor(AgentExecutor):
                         taskId=task.id,
                         lastChunk=True,
                         artifact=new_text_artifact(
-                            name='current_result',
-                            description='Result of request to agent.',
-                            text=event['content'],
+                            name="current_result",
+                            description="Result of request to agent.",
+                            text=event["content"],
                         ),
                     )
                 )
@@ -59,7 +59,7 @@ class HRAgentExecutor(AgentExecutor):
                         status=TaskStatus(
                             state=task_state,
                             message=new_agent_text_message(
-                                event['content'],
+                                event["content"],
                                 task.contextId,
                                 task.id,
                             ),
@@ -78,4 +78,4 @@ class HRAgentExecutor(AgentExecutor):
     async def cancel(
         self, request: RequestContext, event_queue: EventQueue
     ) -> Task | None:
-        raise Exception('cancel not supported')
+        raise Exception("cancel not supported")

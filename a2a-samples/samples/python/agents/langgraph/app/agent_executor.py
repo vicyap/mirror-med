@@ -20,7 +20,6 @@ from a2a.utils.errors import ServerError
 
 from app.agent import CurrencyAgent
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -43,19 +42,19 @@ class CurrencyAgentExecutor(AgentExecutor):
         query = context.get_user_input()
         task = context.current_task
         if not task:
-            task = new_task(context.message) # type: ignore
+            task = new_task(context.message)  # type: ignore
             await event_queue.enqueue_event(task)
         updater = TaskUpdater(event_queue, task.id, task.contextId)
         try:
             async for item in self.agent.stream(query, task.contextId):
-                is_task_complete = item['is_task_complete']
-                require_user_input = item['require_user_input']
+                is_task_complete = item["is_task_complete"]
+                require_user_input = item["require_user_input"]
 
                 if not is_task_complete and not require_user_input:
                     await updater.update_status(
                         TaskState.working,
                         new_agent_text_message(
-                            item['content'],
+                            item["content"],
                             task.contextId,
                             task.id,
                         ),
@@ -64,7 +63,7 @@ class CurrencyAgentExecutor(AgentExecutor):
                     await updater.update_status(
                         TaskState.input_required,
                         new_agent_text_message(
-                            item['content'],
+                            item["content"],
                             task.contextId,
                             task.id,
                         ),
@@ -73,20 +72,18 @@ class CurrencyAgentExecutor(AgentExecutor):
                     break
                 else:
                     await updater.add_artifact(
-                        [Part(root=TextPart(text=item['content']))],
-                        name='conversion_result',
+                        [Part(root=TextPart(text=item["content"]))],
+                        name="conversion_result",
                     )
                     await updater.complete()
                     break
 
         except Exception as e:
-            logger.error(f'An error occurred while streaming the response: {e}')
+            logger.error(f"An error occurred while streaming the response: {e}")
             raise ServerError(error=InternalError()) from e
 
     def _validate_request(self, context: RequestContext) -> bool:
         return False
 
-    async def cancel(
-        self, context: RequestContext, event_queue: EventQueue
-    ) -> None:
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         raise ServerError(error=UnsupportedOperationError())

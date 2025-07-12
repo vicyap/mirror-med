@@ -1,5 +1,4 @@
 import mesop as me
-
 from state.host_agent_service import UpdateAppState
 from state.state import AppState
 
@@ -10,17 +9,17 @@ def polling_buttons():
     state = me.state(AppState)
     with me.box(
         style=me.Style(
-            display='flex',
-            justify_content='end',
+            display="flex",
+            justify_content="end",
         )
     ):
         me.button_toggle(
             value=[str(state.polling_interval)],
             buttons=[
-                me.ButtonToggleButton(label='1s', value='1'),
-                me.ButtonToggleButton(label='5s', value='5'),
-                me.ButtonToggleButton(label='30s', value='30'),
-                me.ButtonToggleButton(label='Disable', value='0'),
+                me.ButtonToggleButton(label="1s", value="1"),
+                me.ButtonToggleButton(label="5s", value="5"),
+                me.ButtonToggleButton(label="30s", value="30"),
+                me.ButtonToggleButton(label="Disable", value="0"),
             ],
             multiple=False,
             hide_selection_indicator=True,
@@ -31,10 +30,10 @@ def polling_buttons():
             ),
         )
         with me.content_button(
-            type='raised',
+            type="raised",
             on_click=force_refresh,
         ):
-            me.icon('refresh')
+            me.icon("refresh")
     me.slot()
 
 

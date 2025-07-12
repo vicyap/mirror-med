@@ -2,12 +2,10 @@ import asyncio
 import base64
 import os
 import urllib
-
 from uuid import uuid4
 
 import asyncclick as click
 import httpx
-
 from a2a.client import A2ACardResolver, A2AClient
 from a2a.types import (
     FilePart,
@@ -31,13 +29,17 @@ from common.utils.push_notification_auth import PushNotificationReceiverAuth
 
 
 @click.command()
-@click.option('--agent', default='http://localhost:10000')
-@click.option('--bearer-token', help='Bearer token for authentication.', envvar='A2A_CLI_BEARER_TOKEN')
-@click.option('--session', default=0)
-@click.option('--history', default=False)
-@click.option('--use_push_notifications', default=False)
-@click.option('--push_notification_receiver', default='http://localhost:5000')
-@click.option('--header', multiple=True)
+@click.option("--agent", default="http://localhost:10000")
+@click.option(
+    "--bearer-token",
+    help="Bearer token for authentication.",
+    envvar="A2A_CLI_BEARER_TOKEN",
+)
+@click.option("--session", default=0)
+@click.option("--history", default=False)
+@click.option("--use_push_notifications", default=False)
+@click.option("--push_notification_receiver", default="http://localhost:5000")
+@click.option("--header", multiple=True)
 async def cli(
     agent,
     bearer_token,
@@ -47,20 +49,18 @@ async def cli(
     push_notification_receiver: str,
     header,
 ):
-    headers = {h.split('=')[0]: h.split('=')[1] for h in header}
+    headers = {h.split("=")[0]: h.split("=")[1] for h in header}
     if bearer_token:
-        headers['Authorization'] = f'Bearer {bearer_token}'
-    print(f'Will use headers: {headers}')
+        headers["Authorization"] = f"Bearer {bearer_token}"
+    print(f"Will use headers: {headers}")
     async with httpx.AsyncClient(timeout=30, headers=headers) as httpx_client:
         card_resolver = A2ACardResolver(httpx_client, agent)
         card = await card_resolver.get_agent_card()
 
-        print('======= Agent Card ========')
+        print("======= Agent Card ========")
         print(card.model_dump_json(exclude_none=True))
 
-        notif_receiver_parsed = urllib.parse.urlparse(
-            push_notification_receiver
-        )
+        notif_receiver_parsed = urllib.parse.urlparse(push_notification_receiver)
         notification_receiver_host = notif_receiver_parsed.hostname
         notification_receiver_port = notif_receiver_parsed.port
 
@@ -70,9 +70,7 @@ async def cli(
             )
 
             notification_receiver_auth = PushNotificationReceiverAuth()
-            await notification_receiver_auth.load_jwks(
-                f'{agent}/.well-known/jwks.json'
-            )
+            await notification_receiver_auth.load_jwks(f"{agent}/.well-known/jwks.json")
 
             push_notification_listener = PushNotificationListener(
                 host=notification_receiver_host,
@@ -88,7 +86,7 @@ async def cli(
         context_id = session if session > 0 else uuid4().hex
 
         while continue_loop:
-            print('=========  starting a new task ======== ')
+            print("=========  starting a new task ======== ")
             continue_loop, _, taskId = await completeTask(
                 client,
                 streaming,
@@ -100,14 +98,12 @@ async def cli(
             )
 
             if history and continue_loop:
-                print('========= history ======== ')
+                print("========= history ======== ")
                 task_response = await client.get_task(
-                    {'id': taskId, 'historyLength': 10}
+                    {"id": taskId, "historyLength": 10}
                 )
                 print(
-                    task_response.model_dump_json(
-                        include={'result': {'history': True}}
-                    )
+                    task_response.model_dump_json(include={"result": {"history": True}})
                 )
 
 
@@ -121,13 +117,13 @@ async def completeTask(
     contextId,
 ):
     prompt = click.prompt(
-        '\nWhat do you want to send to the agent? (:q or quit to exit)'
+        "\nWhat do you want to send to the agent? (:q or quit to exit)"
     )
-    if prompt == ':q' or prompt == 'quit':
+    if prompt == ":q" or prompt == "quit":
         return False, None, None
 
     message = Message(
-        role='user',
+        role="user",
         parts=[TextPart(text=prompt)],
         messageId=str(uuid4()),
         taskId=taskId,
@@ -135,36 +131,32 @@ async def completeTask(
     )
 
     file_path = click.prompt(
-        'Select a file path to attach? (press enter to skip)',
-        default='',
+        "Select a file path to attach? (press enter to skip)",
+        default="",
         show_default=False,
     )
-    if file_path and file_path.strip() != '':
-        with open(file_path, 'rb') as f:
-            file_content = base64.b64encode(f.read()).decode('utf-8')
+    if file_path and file_path.strip() != "":
+        with open(file_path, "rb") as f:
+            file_content = base64.b64encode(f.read()).decode("utf-8")
             file_name = os.path.basename(file_path)
 
         message.parts.append(
-            Part(
-                root=FilePart(
-                    file=FileWithBytes(name=file_name, bytes=file_content)
-                )
-            )
+            Part(root=FilePart(file=FileWithBytes(name=file_name, bytes=file_content)))
         )
 
     payload = MessageSendParams(
         id=str(uuid4()),
         message=message,
         configuration=MessageSendConfiguration(
-            acceptedOutputModes=['text'],
+            acceptedOutputModes=["text"],
         ),
     )
 
     if use_push_notifications:
-        payload['pushNotification'] = {
-            'url': f'http://{notification_receiver_host}:{notification_receiver_port}/notify',
-            'authentication': {
-                'schemes': ['bearer'],
+        payload["pushNotification"] = {
+            "url": f"http://{notification_receiver_host}:{notification_receiver_port}/notify",
+            "authentication": {
+                "schemes": ["bearer"],
             },
         }
 
@@ -179,7 +171,7 @@ async def completeTask(
         )
         async for result in response_stream:
             if isinstance(result.root, JSONRPCErrorResponse):
-                print('Error: ', result.root.error)
+                print("Error: ", result.root.error)
                 return False, contextId, taskId
             event = result.root.result
             contextId = event.contextId
@@ -191,7 +183,7 @@ async def completeTask(
                 taskId = event.taskId
             elif isinstance(event, Message):
                 message = event
-            print(f'stream event => {event.model_dump_json(exclude_none=True)}')
+            print(f"stream event => {event.model_dump_json(exclude_none=True)}")
         # Upon completion of the stream. Retrieve the full task if one was made.
         if taskId:
             taskResult = await client.get_task(
@@ -212,7 +204,7 @@ async def completeTask(
             )
             event = event.root.result
         except Exception as e:
-            print('Failed to complete the call', e)
+            print("Failed to complete the call", e)
         if not contextId:
             contextId = event.contextId
         if isinstance(event, Task):
@@ -223,23 +215,23 @@ async def completeTask(
             message = event
 
     if message:
-        print(f'\n{message.model_dump_json(exclude_none=True)}')
+        print(f"\n{message.model_dump_json(exclude_none=True)}")
         return True, contextId, taskId
     if taskResult:
         # Don't print the contents of a file.
         task_content = taskResult.model_dump_json(
             exclude={
-                'history': {
-                    '__all__': {
-                        'parts': {
-                            '__all__': {'file'},
+                "history": {
+                    "__all__": {
+                        "parts": {
+                            "__all__": {"file"},
                         },
                     },
                 },
             },
             exclude_none=True,
         )
-        print(f'\n{task_content}')
+        print(f"\n{task_content}")
         ## if the result is that more input is required, loop again.
         state = TaskState(taskResult.status.state)
         if state.name == TaskState.input_required.name:
@@ -262,5 +254,5 @@ async def completeTask(
     return True, contextId, taskId
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(cli())

@@ -2,7 +2,6 @@ import json
 
 import mesop as me
 import pandas as pd
-
 from state.state import ContentPart, SessionTask, StateTask
 
 
@@ -15,21 +14,21 @@ def message_string(content: ContentPart) -> str:
 @me.component
 def task_card(tasks: list[SessionTask]):
     """Task card component"""
-    columns = ['Conversation ID', 'Task ID', 'Description', 'Status', 'Output']
+    columns = ["Conversation ID", "Task ID", "Description", "Status", "Output"]
     df_data: dict[str, list[str]] = dict([(c, []) for c in columns])
     for task in tasks:
-        df_data['Conversation ID'].append(task.context_id)
-        df_data['Task ID'].append(task.task.task_id or '')
-        df_data['Description'].append(
-            '\n'.join(message_string(x[0]) for x in task.task.message.content)
+        df_data["Conversation ID"].append(task.context_id)
+        df_data["Task ID"].append(task.task.task_id or "")
+        df_data["Description"].append(
+            "\n".join(message_string(x[0]) for x in task.task.message.content)
         )
-        df_data['Status'].append(task.task.state)
-        df_data['Output'].append(flatten_artifacts(task.task))
+        df_data["Status"].append(task.task.state)
+        df_data["Output"].append(flatten_artifacts(task.task))
     df = pd.DataFrame(pd.DataFrame(df_data), columns=columns)
     with me.box(
         style=me.Style(
-            display='flex',
-            justify_content='space-between',
+            display="flex",
+            justify_content="space-between",
         )
     ):
         me.table(
@@ -43,9 +42,9 @@ def flatten_artifacts(task: StateTask) -> str:
     parts = []
     for a in task.artifacts:
         for p in a:
-            if p[1] == 'text/plain' or p[1] == 'application/json':
+            if p[1] == "text/plain" or p[1] == "application/json":
                 parts.append(message_string(p[0]))
             else:
                 parts.append(p[1])
 
-    return '\n'.join(parts)
+    return "\n".join(parts)

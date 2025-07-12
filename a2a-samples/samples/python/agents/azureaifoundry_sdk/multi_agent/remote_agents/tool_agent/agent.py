@@ -7,8 +7,13 @@ from typing import Any
 from azure.identity.aio import DefaultAzureCredential
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from semantic_kernel.agents import AzureAIAgent, AzureAIAgentSettings, AzureAIAgentThread
+from semantic_kernel.agents import (
+    AzureAIAgent,
+    AzureAIAgentSettings,
+    AzureAIAgentThread,
+)
 from semantic_kernel.connectors.mcp import MCPSsePlugin
+
 # from semantic_kernel.contents import ChatMessageContent
 
 logger = logging.getLogger(__name__)
@@ -21,7 +26,7 @@ load_dotenv()
 class ResponseFormat(BaseModel):
     """A Response Format model to direct how the model should respond."""
 
-    status: str = 'input_required'
+    status: str = "input_required"
     message: str
 
 
@@ -40,24 +45,26 @@ class SemanticKernelMCPAgent:
         self.credential = None
         self.plugin = None
 
-    async def initialize(self, mcp_url: str = "http://localhost:7071/runtime/webhooks/mcp/sse"):
+    async def initialize(
+        self, mcp_url: str = "http://localhost:7071/runtime/webhooks/mcp/sse"
+    ):
         """Initialize the agent with Azure credentials and MCP plugin."""
         try:
             # Create Azure credential
             self.credential = DefaultAzureCredential()
-            
+
             # Create Azure AI client
             self.client = AzureAIAgent.create_client(credential=self.credential)
-            
+
             # Create the MCP plugin
             self.plugin = MCPSsePlugin(
                 name="DevTools",
                 url=mcp_url,
             )
-            
+
             # Initialize the plugin
             await self.plugin.__aenter__()
-            
+
             # Create agent definition
             agent_definition = await self.client.agents.create_agent(
                 model=AzureAIAgentSettings().model_deployment_name,
@@ -71,9 +78,9 @@ class SemanticKernelMCPAgent:
                 definition=agent_definition,
                 plugins=[self.plugin],
             )
-            
+
             logger.info("MCP Agent initialized successfully")
-            
+
         except Exception as e:
             logger.error(f"Failed to initialize MCP Agent: {e}")
             await self.cleanup()
@@ -91,9 +98,9 @@ class SemanticKernelMCPAgent:
         """
         if not self.agent:
             return {
-                'is_task_complete': False,
-                'require_user_input': True,
-                'content': 'Agent not initialized. Please call initialize() first.',
+                "is_task_complete": False,
+                "require_user_input": True,
+                "content": "Agent not initialized. Please call initialize() first.",
             }
 
         try:
@@ -106,17 +113,17 @@ class SemanticKernelMCPAgent:
                 self.thread = response.thread
 
             content = "\n".join(responses) if responses else "No response received."
-            
+
             return {
-                'is_task_complete': True,
-                'require_user_input': False,
-                'content': content,
+                "is_task_complete": True,
+                "require_user_input": False,
+                "content": content,
             }
         except Exception as e:
             return {
-                'is_task_complete': False,
-                'require_user_input': True,
-                'content': f'Error processing request: {str(e)}',
+                "is_task_complete": False,
+                "require_user_input": True,
+                "content": f"Error processing request: {str(e)}",
             }
 
     async def stream(
@@ -135,9 +142,9 @@ class SemanticKernelMCPAgent:
         """
         if not self.agent:
             yield {
-                'is_task_complete': False,
-                'require_user_input': True,
-                'content': 'Agent not initialized. Please call initialize() first.',
+                "is_task_complete": False,
+                "require_user_input": True,
+                "content": "Agent not initialized. Please call initialize() first.",
             }
             return
 
@@ -148,22 +155,22 @@ class SemanticKernelMCPAgent:
             ):
                 self.thread = response.thread
                 yield {
-                    'is_task_complete': False,
-                    'require_user_input': False,
-                    'content': str(response),
+                    "is_task_complete": False,
+                    "require_user_input": False,
+                    "content": str(response),
                 }
-            
+
             # Final completion message
             yield {
-                'is_task_complete': True,
-                'require_user_input': False,
-                'content': 'Task completed successfully.',
+                "is_task_complete": True,
+                "require_user_input": False,
+                "content": "Task completed successfully.",
             }
         except Exception as e:
             yield {
-                'is_task_complete': False,
-                'require_user_input': True,
-                'content': f'Error processing request: {str(e)}',
+                "is_task_complete": False,
+                "require_user_input": True,
+                "content": f"Error processing request: {str(e)}",
             }
 
     async def cleanup(self):
@@ -175,14 +182,14 @@ class SemanticKernelMCPAgent:
                 logger.info("Thread deleted successfully")
         except Exception as e:
             logger.error(f"Error deleting thread: {e}")
-        
+
         try:
             if self.agent and self.client:
                 await self.client.agents.delete_agent(self.agent.id)
                 logger.info("Agent deleted successfully")
         except Exception as e:
             logger.error(f"Error deleting agent: {e}")
-        
+
         try:
             if self.plugin:
                 await self.plugin.__aexit__(None, None, None)
@@ -190,7 +197,7 @@ class SemanticKernelMCPAgent:
                 logger.info("MCP plugin cleaned up successfully")
         except Exception as e:
             logger.error(f"Error cleaning up MCP plugin: {e}")
-        
+
         try:
             if self.client:
                 await self.client.close()
@@ -198,7 +205,7 @@ class SemanticKernelMCPAgent:
                 logger.info("Client closed successfully")
         except Exception as e:
             logger.error(f"Error closing client: {e}")
-        
+
         try:
             if self.credential:
                 await self.credential.close()
@@ -206,5 +213,5 @@ class SemanticKernelMCPAgent:
                 logger.info("Credential closed successfully")
         except Exception as e:
             logger.error(f"Error closing credential: {e}")
-        
+
         self.agent = None

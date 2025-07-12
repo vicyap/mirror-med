@@ -3,7 +3,6 @@ import os
 import sys
 import traceback
 import uuid
-
 from typing import Any
 
 from a2a.types import FileWithBytes, Message, Part, Role, Task, TaskState
@@ -32,8 +31,7 @@ from .state import (
     StateTask,
 )
 
-
-server_url = 'http://localhost:12000'
+server_url = "http://localhost:12000"
 
 
 async def ListConversations() -> list[Conversation]:
@@ -42,7 +40,7 @@ async def ListConversations() -> list[Conversation]:
         response = await client.list_conversation(ListConversationRequest())
         return response.result if response.result else []
     except Exception as e:
-        print('Failed to list conversations: ', e)
+        print("Failed to list conversations: ", e)
     return []
 
 
@@ -53,7 +51,7 @@ async def SendMessage(message: Message) -> Message | MessageInfo | None:
         return response.result
     except Exception as e:
         traceback.print_exc()
-        print('Failed to send message: ', e)
+        print("Failed to send message: ", e)
     return None
 
 
@@ -64,11 +62,11 @@ async def CreateConversation() -> Conversation:
         return (
             response.result
             if response.result
-            else Conversation(conversation_id='', is_active=False)
+            else Conversation(conversation_id="", is_active=False)
         )
     except Exception as e:
-        print('Failed to create conversation', e)
-    return Conversation(conversation_id='', is_active=False)
+        print("Failed to create conversation", e)
+    return Conversation(conversation_id="", is_active=False)
 
 
 async def ListRemoteAgents():
@@ -77,7 +75,7 @@ async def ListRemoteAgents():
         response = await client.list_agents(ListAgentRequest())
         return response.result
     except Exception as e:
-        print('Failed to read agents', e)
+        print("Failed to read agents", e)
 
 
 async def AddRemoteAgent(path: str):
@@ -85,7 +83,7 @@ async def AddRemoteAgent(path: str):
     try:
         await client.register_agent(RegisterAgentRequest(params=path))
     except Exception as e:
-        print('Failed to register the agent', e)
+        print("Failed to register the agent", e)
 
 
 async def GetEvents() -> list[Event]:
@@ -94,7 +92,7 @@ async def GetEvents() -> list[Event]:
         response = await client.get_events(GetEventRequest())
         return response.result if response.result else []
     except Exception as e:
-        print('Failed to get events', e)
+        print("Failed to get events", e)
     return []
 
 
@@ -104,7 +102,7 @@ async def GetProcessingMessages():
         response = await client.get_pending_messages(PendingMessageRequest())
         return dict(response.result)
     except Exception as e:
-        print('Error getting pending messages', e)
+        print("Error getting pending messages", e)
 
 
 def GetMessageAliases():
@@ -117,7 +115,7 @@ async def GetTasks():
         response = await client.list_tasks(ListTaskRequest())
         return response.result
     except Exception as e:
-        print('Failed to list tasks ', e)
+        print("Failed to list tasks ", e)
 
 
 async def ListMessages(conversation_id: str) -> list[Message]:
@@ -128,7 +126,7 @@ async def ListMessages(conversation_id: str) -> list[Message]:
         )
         return response.result if response.result else []
     except Exception as e:
-        print('Failed to list messages ', e)
+        print("Failed to list messages ", e)
     return []
 
 
@@ -161,7 +159,7 @@ async def UpdateAppState(state: AppState, conversation_id: str):
         state.background_tasks = await GetProcessingMessages()
         state.message_aliases = GetMessageAliases()
     except Exception as e:
-        print('Failed to update state: ', e)
+        print("Failed to update state: ", e)
         traceback.print_exc(file=sys.stdout)
 
 
@@ -171,17 +169,17 @@ async def UpdateApiKey(api_key: str):
 
     try:
         # Set the environment variable
-        os.environ['GOOGLE_API_KEY'] = api_key
+        os.environ["GOOGLE_API_KEY"] = api_key
 
         # Call the update API endpoint
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f'{server_url}/api_key/update', json={'api_key': api_key}
+                f"{server_url}/api_key/update", json={"api_key": api_key}
             )
             response.raise_for_status()
         return True
     except Exception as e:
-        print('Failed to update API key: ', e)
+        print("Failed to update API key: ", e)
         return False
 
 
@@ -191,8 +189,8 @@ def convert_message_to_state(message: Message) -> StateMessage:
 
     return StateMessage(
         message_id=message.messageId,
-        context_id=message.contextId if message.contextId else '',
-        task_id=message.taskId if message.taskId else '',
+        context_id=message.contextId if message.contextId else "",
+        task_id=message.taskId if message.taskId else "",
         role=message.role.name,
         content=extract_content(message.parts),
     )
@@ -212,9 +210,7 @@ def convert_conversation_to_state(
 def convert_task_to_state(task: Task) -> StateTask:
     # Get the first message as the description
     output = (
-        [extract_content(a.parts) for a in task.artifacts]
-        if task.artifacts
-        else []
+        [extract_content(a.parts) for a in task.artifacts] if task.artifacts else []
     )
     if not task.history:
         return StateTask(
@@ -226,7 +222,7 @@ def convert_task_to_state(task: Task) -> StateTask:
                 context_id=task.contextId,
                 task_id=task.id,
                 role=Role.agent.name,
-                content=[('No history', 'text')],
+                content=[("No history", "text")],
             ),
             artifacts=output,
         )
@@ -261,23 +257,23 @@ def extract_content(
         return []
     for part in message_parts:
         p = part.root
-        if p.kind == 'text':
-            parts.append((p.text, 'text/plain'))
-        elif p.kind == 'file':
+        if p.kind == "text":
+            parts.append((p.text, "text/plain"))
+        elif p.kind == "file":
             if isinstance(p.file, FileWithBytes):
-                parts.append((p.file.bytes, p.file.mimeType or ''))
+                parts.append((p.file.bytes, p.file.mimeType or ""))
             else:
-                parts.append((p.file.uri, p.file.mimeType or ''))
-        elif p.kind == 'data':
+                parts.append((p.file.uri, p.file.mimeType or ""))
+        elif p.kind == "data":
             try:
                 jsonData = json.dumps(p.data)
-                if 'type' in p.data and p.data['type'] == 'form':
-                    parts.append((p.data, 'form'))
+                if "type" in p.data and p.data["type"] == "form":
+                    parts.append((p.data, "form"))
                 else:
-                    parts.append((jsonData, 'application/json'))
+                    parts.append((jsonData, "application/json"))
             except Exception as e:
-                print('Failed to dump data', e)
-                parts.append(('<data>', 'text/plain'))
+                print("Failed to dump data", e)
+                parts.append(("<data>", "text/plain"))
     return parts
 
 
@@ -286,7 +282,7 @@ def extract_message_id(message: Message) -> str:
 
 
 def extract_message_conversation(message: Message) -> str:
-    return message.contextId if message.contextId else ''
+    return message.contextId if message.contextId else ""
 
 
 def extract_conversation_id(task: Task) -> str:
@@ -294,5 +290,5 @@ def extract_conversation_id(task: Task) -> str:
         return task.contextId
     # Tries to find the first conversation id for the message in the task.
     if task.status.message:
-        return task.status.message.contextId or ''
-    return ''
+        return task.status.message.contextId or ""
+    return ""

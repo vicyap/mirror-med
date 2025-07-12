@@ -5,14 +5,19 @@ import time
 from collections.abc import AsyncIterable
 from typing import Any
 
-from azure.identity.aio import DefaultAzureCredential
 from azure.ai.agents.models import ListSortOrder
+from azure.identity.aio import DefaultAzureCredential
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from semantic_kernel.agents import AzureAIAgent, AzureAIAgentSettings, AzureAIAgentThread
-from semantic_kernel.agents import ChatCompletionAgent
+from semantic_kernel.agents import (
+    AzureAIAgent,
+    AzureAIAgentSettings,
+    AzureAIAgentThread,
+    ChatCompletionAgent,
+)
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.connectors.mcp import MCPSsePlugin, MCPStdioPlugin
+
 # from semantic_kernel.contents import ChatMessageContent
 
 logger = logging.getLogger(__name__)
@@ -25,7 +30,7 @@ load_dotenv()
 class ResponseFormat(BaseModel):
     """A Response Format model to direct how the model should respond."""
 
-    status: str = 'input_required'
+    status: str = "input_required"
     message: str
 
 
@@ -49,20 +54,22 @@ class SemanticKernelMCPAgent:
         try:
             # Create Azure credential
             self.credential = DefaultAzureCredential()
-            
+
             # Create Azure AI client (using async context manager pattern from notebook)
-            self.client = await AzureAIAgent.create_client(credential=self.credential).__aenter__()
-            
+            self.client = await AzureAIAgent.create_client(
+                credential=self.credential
+            ).__aenter__()
+
             # Create the Playwright MCP STDIO plugin (following notebook pattern)
             self.plugin = MCPStdioPlugin(
                 name="Playwright",
                 command="npx",
                 args=["@playwright/mcp@latest"],
             )
-            
+
             # Initialize the plugin using async context manager
             await self.plugin.__aenter__()
-            
+
             # Create agent definition (following notebook pattern)
             agent_definition = await self.client.agents.create_agent(
                 model=AzureAIAgentSettings().model_deployment_name,
@@ -76,17 +83,19 @@ class SemanticKernelMCPAgent:
                 definition=agent_definition,
                 plugins=[self.plugin],
             )
-            
+
             logger.info("MCP Agent with Playwright plugin initialized successfully")
-            
+
         except Exception as e:
             logger.error(f"Failed to initialize MCP Agent with Playwright: {e}")
             await self.cleanup()
             raise
 
-    async def initialize_with_stdio(self, name: str, command: str, args: list[str] = None):
+    async def initialize_with_stdio(
+        self, name: str, command: str, args: list[str] = None
+    ):
         """Initialize the agent with Azure credentials and MCP STDIO plugin.
-        
+
         Args:
             name: Name of the MCP plugin
             command: Command to start MCP server (e.g., "python", "npx")
@@ -95,10 +104,12 @@ class SemanticKernelMCPAgent:
         try:
             # Create Azure credential
             self.credential = DefaultAzureCredential()
-            
+
             # Create Azure AI client (using async context manager pattern from notebook)
-            self.client = await AzureAIAgent.create_client(credential=self.credential).__aenter__()
-            
+            self.client = await AzureAIAgent.create_client(
+                credential=self.credential
+            ).__aenter__()
+
             # Create the MCP STDIO plugin
             if args:
                 self.plugin = MCPStdioPlugin(
@@ -111,10 +122,10 @@ class SemanticKernelMCPAgent:
                     name=name,
                     command=command,
                 )
-            
+
             # Initialize the plugin using async context manager
             await self.plugin.__aenter__()
-            
+
             # Create agent definition (following notebook pattern)
             agent_definition = await self.client.agents.create_agent(
                 model=AzureAIAgentSettings().model_deployment_name,
@@ -128,9 +139,11 @@ class SemanticKernelMCPAgent:
                 definition=agent_definition,
                 plugins=[self.plugin],
             )
-            
-            logger.info(f"MCP Agent with STDIO plugin '{name}' initialized successfully")
-            
+
+            logger.info(
+                f"MCP Agent with STDIO plugin '{name}' initialized successfully"
+            )
+
         except Exception as e:
             logger.error(f"Failed to initialize MCP Agent with STDIO '{name}': {e}")
             await self.cleanup()
@@ -148,9 +161,9 @@ class SemanticKernelMCPAgent:
         """
         if not self.agent:
             return {
-                'is_task_complete': False,
-                'require_user_input': True,
-                'content': 'Agent not initialized. Please call initialize() first.',
+                "is_task_complete": False,
+                "require_user_input": True,
+                "content": "Agent not initialized. Please call initialize() first.",
             }
 
         try:
@@ -167,17 +180,17 @@ class SemanticKernelMCPAgent:
 
             content = "\n".join(responses) if responses else "No response received."
             print("Finished processing user input.")  # Following notebook pattern
-            
+
             return {
-                'is_task_complete': True,
-                'require_user_input': False,
-                'content': content,
+                "is_task_complete": True,
+                "require_user_input": False,
+                "content": content,
             }
         except Exception as e:
             return {
-                'is_task_complete': False,
-                'require_user_input': True,
-                'content': f'Error processing request: {str(e)}',
+                "is_task_complete": False,
+                "require_user_input": True,
+                "content": f"Error processing request: {str(e)}",
             }
 
     async def stream(
@@ -196,9 +209,9 @@ class SemanticKernelMCPAgent:
         """
         if not self.agent:
             yield {
-                'is_task_complete': False,
-                'require_user_input': True,
-                'content': 'Agent not initialized. Please call initialize() first.',
+                "is_task_complete": False,
+                "require_user_input": True,
+                "content": "Agent not initialized. Please call initialize() first.",
             }
             return
 
@@ -211,23 +224,23 @@ class SemanticKernelMCPAgent:
                 print(f"# {response.name}: {response}")
                 self.thread = response.thread
                 yield {
-                    'is_task_complete': False,
-                    'require_user_input': False,
-                    'content': str(response),
+                    "is_task_complete": False,
+                    "require_user_input": False,
+                    "content": str(response),
                 }
-            
+
             # Final completion message
             print("Finished processing user input.")  # Following notebook pattern
             yield {
-                'is_task_complete': True,
-                'require_user_input': False,
-                'content': 'Task completed successfully.',
+                "is_task_complete": True,
+                "require_user_input": False,
+                "content": "Task completed successfully.",
             }
         except Exception as e:
             yield {
-                'is_task_complete': False,
-                'require_user_input': True,
-                'content': f'Error processing request: {str(e)}',
+                "is_task_complete": False,
+                "require_user_input": True,
+                "content": f"Error processing request: {str(e)}",
             }
 
     async def cleanup(self):
@@ -239,14 +252,14 @@ class SemanticKernelMCPAgent:
                 logger.info("Thread deleted successfully")
         except Exception as e:
             logger.error(f"Error deleting thread: {e}")
-        
+
         try:
             if self.agent and self.client:
                 await self.client.agents.delete_agent(self.agent.id)
                 logger.info("Agent deleted successfully")
         except Exception as e:
             logger.error(f"Error deleting agent: {e}")
-        
+
         try:
             if self.plugin:
                 await self.plugin.__aexit__(None, None, None)
@@ -254,7 +267,7 @@ class SemanticKernelMCPAgent:
                 logger.info("MCP plugin cleaned up successfully")
         except Exception as e:
             logger.error(f"Error cleaning up MCP plugin: {e}")
-        
+
         try:
             if self.client:
                 await self.client.close()
@@ -262,7 +275,7 @@ class SemanticKernelMCPAgent:
                 logger.info("Client closed successfully")
         except Exception as e:
             logger.error(f"Error closing client: {e}")
-        
+
         try:
             if self.credential:
                 await self.credential.close()
@@ -270,72 +283,79 @@ class SemanticKernelMCPAgent:
                 logger.info("Credential closed successfully")
         except Exception as e:
             logger.error(f"Error closing credential: {e}")
-        
+
         self.agent = None
+
 
 # endregion
 
 # region Convenience Functions for Notebook-style Usage
 
-async def run_playwright_agent_example(user_input: str = "please navigate to github.com/kinfey"):
+
+async def run_playwright_agent_example(
+    user_input: str = "please navigate to github.com/kinfey",
+):
     """Run Playwright MCP agent example similar to the updated notebook implementation.
-    
+
     Args:
         user_input: The user input to process
     """
     agent = SemanticKernelMCPAgent()
-    
+
     try:
         # Initialize agent with Playwright plugin
         await agent.initialize_playwright()
-        
+
         # Process user input
         print(f"Processing user input: {user_input}")
         result = await agent.invoke(user_input)
-        
+
         print("\nResult:")
-        print(result['content'])
-        
+        print(result["content"])
+
         return result
-        
+
     except Exception as e:
         print(f"Error: {e}")
         return {
-            'is_task_complete': False,
-            'require_user_input': True,
-            'content': f'Error: {str(e)}',
+            "is_task_complete": False,
+            "require_user_input": True,
+            "content": f"Error: {str(e)}",
         }
     finally:
         # Cleanup
         await agent.cleanup()
 
 
-async def run_playwright_agent_stream_example(user_input: str = "please navigate to github.com/kinfey"):
+async def run_playwright_agent_stream_example(
+    user_input: str = "please navigate to github.com/kinfey",
+):
     """Run Playwright MCP agent with streaming similar to the updated notebook implementation.
-    
+
     Args:
         user_input: The user input to process
     """
     agent = SemanticKernelMCPAgent()
-    
+
     try:
         # Initialize agent with Playwright plugin
         await agent.initialize_playwright()
-        
+
         # Process user input with streaming
         print(f"Processing user input (streaming): {user_input}")
-        
+
         async for response in agent.stream(user_input):
-            if not response['is_task_complete']:
-                print(response['content'])
+            if not response["is_task_complete"]:
+                print(response["content"])
             else:
                 print(f"\nFinal result: {response['content']}")
                 break
-        
+
     except Exception as e:
         print(f"Error: {e}")
     finally:
         # Cleanup
         await agent.cleanup()
+
 
 # endregion

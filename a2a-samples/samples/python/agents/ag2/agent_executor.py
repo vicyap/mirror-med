@@ -11,7 +11,6 @@ from a2a.types import (
 from a2a.utils import new_agent_text_message, new_task, new_text_artifact
 from agent import YoutubeMCPAgent  # type: ignore[import-untyped]
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -34,12 +33,12 @@ class AG2AgentExecutor(AgentExecutor):
             await event_queue.enqueue_event(task)
 
         async for item in self.agent.stream(query, task.contextId):
-            is_task_complete = item['is_task_complete']
-            require_user_input = item['require_user_input']
-            content = item['content']
+            is_task_complete = item["is_task_complete"]
+            require_user_input = item["require_user_input"]
+            content = item["content"]
 
             logger.info(
-                f'Stream item received: complete={is_task_complete}, require_input={require_user_input}, content_len={len(content)}'
+                f"Stream item received: complete={is_task_complete}, require_input={require_user_input}, content_len={len(content)}"
             )
 
             if not is_task_complete and not require_user_input:
@@ -82,8 +81,8 @@ class AG2AgentExecutor(AgentExecutor):
                         taskId=task.id,
                         lastChunk=True,
                         artifact=new_text_artifact(
-                            name='current_result',
-                            description='Result of request to agent.',
+                            name="current_result",
+                            description="Result of request to agent.",
                             text=content,
                         ),
                     )
@@ -97,7 +96,5 @@ class AG2AgentExecutor(AgentExecutor):
                     )
                 )
 
-    async def cancel(
-        self, context: RequestContext, event_queue: EventQueue
-    ) -> None:
-        raise Exception('cancel not supported')
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
+        raise Exception("cancel not supported")

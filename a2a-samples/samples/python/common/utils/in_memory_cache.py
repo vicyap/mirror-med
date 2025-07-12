@@ -2,7 +2,6 @@
 
 import threading
 import time
-
 from typing import Any, Optional
 
 
@@ -12,7 +11,7 @@ class InMemoryCache:
     Ensures only one instance of the cache exists across the application.
     """
 
-    _instance: Optional['InMemoryCache'] = None
+    _instance: Optional["InMemoryCache"] = None
     _lock: threading.Lock = threading.Lock()
     _initialized: bool = False
 

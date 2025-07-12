@@ -1,20 +1,18 @@
 import mesop as me
-
 from state.state import AppState
 from styles.styles import (
+    _FANCY_TEXT_GRADIENT,
     DEFAULT_MENU_STYLE,
     SIDENAV_MAX_WIDTH,
     SIDENAV_MIN_WIDTH,
-    _FANCY_TEXT_GRADIENT,
 )
 
-
 page_json = [
-    {'display': 'Home', 'icon': 'message', 'route': '/'},
-    {'display': 'Agents', 'icon': 'smart_toy', 'route': '/agents'},
-    {'display': 'Event List', 'icon': 'list', 'route': '/event_list'},
-    {'display': 'Task List', 'icon': 'task', 'route': '/task_list'},
-    {'display': 'Settings', 'icon': 'settings', 'route': '/settings'},
+    {"display": "Home", "icon": "message", "route": "/"},
+    {"display": "Agents", "icon": "smart_toy", "route": "/agents"},
+    {"display": "Event List", "icon": "list", "route": "/event_list"},
+    {"display": "Task List", "icon": "task", "route": "/task_list"},
+    {"display": "Settings", "icon": "settings", "route": "/settings"},
 ]
 
 
@@ -31,7 +29,7 @@ def navigate_to(e: me.ClickEvent):
     if idx > len(page_json):
         return
     page = page_json[idx]
-    s.current_page = page['route']
+    s.current_page = page["route"]
     me.navigate(s.current_page)
     yield
 
@@ -44,51 +42,49 @@ def sidenav(current_page: str):
     with me.sidenav(
         opened=True,
         style=me.Style(
-            width=SIDENAV_MAX_WIDTH
-            if app_state.sidenav_open
-            else SIDENAV_MIN_WIDTH,
-            background=me.theme_var('secondary-container'),
+            width=SIDENAV_MAX_WIDTH if app_state.sidenav_open else SIDENAV_MIN_WIDTH,
+            background=me.theme_var("secondary-container"),
         ),
     ):
         with me.box(
             style=me.Style(
                 margin=me.Margin(top=16, left=16, right=16, bottom=16),
-                display='flex',
-                flex_direction='column',
+                display="flex",
+                flex_direction="column",
                 gap=5,
             ),
         ):
             with me.box(
                 style=me.Style(
-                    display='flex',
-                    flex_direction='row',
+                    display="flex",
+                    flex_direction="row",
                     gap=5,
-                    align_items='center',
+                    align_items="center",
                 ),
             ):
                 with me.content_button(
-                    type='icon',
+                    type="icon",
                     on_click=on_sidenav_menu_click,
                 ):
                     with me.box():
-                        with me.tooltip(message='Expand menu'):
-                            me.icon(icon='menu')
+                        with me.tooltip(message="Expand menu"):
+                            me.icon(icon="menu")
                 if app_state.sidenav_open:
-                    me.text('STUDIO', style=_FANCY_TEXT_GRADIENT)
+                    me.text("STUDIO", style=_FANCY_TEXT_GRADIENT)
             me.box(style=me.Style(height=16))
             for idx, page in enumerate(page_json):
                 menu_item(
                     idx,
-                    page['icon'],
-                    page['display'],
+                    page["icon"],
+                    page["display"],
                     not app_state.sidenav_open,
                 )
             # settings & theme toggle
             with me.box(style=MENU_BOTTOM):
                 theme_toggle_icon(
                     9,
-                    'light_mode',
-                    'Theme',
+                    "light_mode",
+                    "Theme",
                     not app_state.sidenav_open,
                 )
                 # menu_item(10, "settings", "Settings", not app_state.sidenav_open)
@@ -105,17 +101,17 @@ def menu_item(
     if minimized:  # minimized
         with me.box(
             style=me.Style(
-                display='flex',
-                flex_direction='row',
+                display="flex",
+                flex_direction="row",
                 gap=5,
-                align_items='center',
+                align_items="center",
             ),
         ):
             with me.content_button(
                 key=str(key),
                 on_click=navigate_to,
                 style=content_style,
-                type='icon',
+                type="icon",
             ):
                 with me.tooltip(message=text):
                     me.icon(icon=icon)
@@ -128,10 +124,10 @@ def menu_item(
         ):
             with me.box(
                 style=me.Style(
-                    display='flex',
-                    flex_direction='row',
+                    display="flex",
+                    flex_direction="row",
                     gap=5,
-                    align_items='center',
+                    align_items="center",
                 ),
             ):
                 me.icon(icon=icon)
@@ -141,12 +137,12 @@ def menu_item(
 def toggle_theme(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Toggle theme event"""
     s = me.state(AppState)
-    if me.theme_brightness() == 'light':
-        me.set_theme_mode('dark')
-        s.theme_mode = 'dark'
+    if me.theme_brightness() == "light":
+        me.set_theme_mode("dark")
+        s.theme_mode = "dark"
     else:
-        me.set_theme_mode('light')
-        s.theme_mode = 'light'
+        me.set_theme_mode("light")
+        s.theme_mode = "light"
 
 
 def theme_toggle_icon(key: int, icon: str, text: str, min: bool = True):
@@ -155,23 +151,21 @@ def theme_toggle_icon(key: int, icon: str, text: str, min: bool = True):
     if min:  # minimized
         with me.box(
             style=me.Style(
-                display='flex',
-                flex_direction='row',
+                display="flex",
+                flex_direction="row",
                 gap=5,
-                align_items='center',
+                align_items="center",
             ),
         ):
             with me.content_button(
                 key=str(key),
                 on_click=toggle_theme,
                 # style=THEME_TOGGLE_STYLE,
-                type='icon',
+                type="icon",
             ):
                 with me.tooltip(message=text):
                     me.icon(
-                        'light_mode'
-                        if me.theme_brightness() == 'dark'
-                        else 'dark_mode'
+                        "light_mode" if me.theme_brightness() == "dark" else "dark_mode"
                     )
 
     else:  # expanded
@@ -182,28 +176,24 @@ def theme_toggle_icon(key: int, icon: str, text: str, min: bool = True):
         ):
             with me.box(
                 style=me.Style(
-                    display='flex',
-                    flex_direction='row',
+                    display="flex",
+                    flex_direction="row",
                     gap=5,
-                    align_items='center',
+                    align_items="center",
                 ),
             ):
                 me.icon(
-                    'light_mode'
-                    if me.theme_brightness() == 'dark'
-                    else 'dark_mode'
+                    "light_mode" if me.theme_brightness() == "dark" else "dark_mode"
                 )
                 me.text(
-                    'Light mode'
-                    if me.theme_brightness() == 'dark'
-                    else 'Dark mode'
+                    "Light mode" if me.theme_brightness() == "dark" else "Dark mode"
                 )
 
 
 MENU_BOTTOM = me.Style(
-    display='flex',
-    flex_direction='column',
-    position='absolute',
+    display="flex",
+    flex_direction="column",
+    position="absolute",
     bottom=8,
-    align_content='left',
+    align_content="left",
 )

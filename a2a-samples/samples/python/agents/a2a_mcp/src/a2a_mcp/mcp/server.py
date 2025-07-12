@@ -3,24 +3,21 @@ import json
 import os
 import sqlite3
 import traceback
-
 from pathlib import Path
 
 import google.generativeai as genai
 import numpy as np
 import pandas as pd
 import requests
-
 from a2a_mcp.common.utils import init_api_key
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.utilities.logging import get_logger
 
-
 logger = get_logger(__name__)
-AGENT_CARDS_DIR = 'agent_cards'
-MODEL = 'models/embedding-001'
-SQLLITE_DB = 'travel_agency.db'
-PLACES_API_URL = 'https://places.googleapis.com/v1/places:searchText'
+AGENT_CARDS_DIR = "agent_cards"
+MODEL = "models/embedding-001"
+SQLLITE_DB = "travel_agency.db"
+PLACES_API_URL = "https://places.googleapis.com/v1/places:searchText"
 
 
 def generate_embeddings(text):
@@ -35,8 +32,8 @@ def generate_embeddings(text):
     return genai.embed_content(
         model=MODEL,
         content=text,
-        task_type='retrieval_document',
-    )['embedding']
+        task_type="retrieval_document",
+    )["embedding"]
 
 
 def load_agent_cards():
@@ -52,37 +49,35 @@ def load_agent_cards():
     dir_path = Path(AGENT_CARDS_DIR)
     if not dir_path.is_dir():
         logger.error(
-            f'Agent cards directory not found or is not a directory: {AGENT_CARDS_DIR}'
+            f"Agent cards directory not found or is not a directory: {AGENT_CARDS_DIR}"
         )
         return agent_cards
 
-    logger.info(f'Loading agent cards from card repo: {AGENT_CARDS_DIR}')
+    logger.info(f"Loading agent cards from card repo: {AGENT_CARDS_DIR}")
 
     for filename in os.listdir(AGENT_CARDS_DIR):
-        if filename.lower().endswith('.json'):
+        if filename.lower().endswith(".json"):
             file_path = dir_path / filename
 
             if file_path.is_file():
-                logger.info(f'Reading file: {filename}')
+                logger.info(f"Reading file: {filename}")
                 try:
-                    with file_path.open('r', encoding='utf-8') as f:
+                    with file_path.open("r", encoding="utf-8") as f:
                         data = json.load(f)
                         card_uris.append(
-                            f'resource://agent_cards/{Path(filename).stem}'
+                            f"resource://agent_cards/{Path(filename).stem}"
                         )
                         agent_cards.append(data)
                 except json.JSONDecodeError as jde:
-                    logger.error(f'JSON Decoder Error {jde}')
+                    logger.error(f"JSON Decoder Error {jde}")
                 except OSError as e:
-                    logger.error(f'Error reading file {filename}: {e}.')
+                    logger.error(f"Error reading file {filename}: {e}.")
                 except Exception as e:
                     logger.error(
-                        f'An unexpected error occurred processing {filename}: {e}',
+                        f"An unexpected error occurred processing {filename}: {e}",
                         exc_info=True,
                     )
-    logger.info(
-        f'Finished loading agent cards. Found {len(agent_cards)} cards.'
-    )
+    logger.info(f"Finished loading agent cards. Found {len(agent_cards)} cards.")
     return card_uris, agent_cards
 
 
@@ -96,20 +91,18 @@ def build_agent_card_embeddings() -> pd.DataFrame:
         during the embedding generation process.
     """
     card_uris, agent_cards = load_agent_cards()
-    logger.info('Generating Embeddings for agent cards')
+    logger.info("Generating Embeddings for agent cards")
     try:
         if agent_cards:
-            df = pd.DataFrame(
-                {'card_uri': card_uris, 'agent_card': agent_cards}
-            )
-            df['card_embeddings'] = df.apply(
-                lambda row: generate_embeddings(json.dumps(row['agent_card'])),
+            df = pd.DataFrame({"card_uri": card_uris, "agent_card": agent_cards})
+            df["card_embeddings"] = df.apply(
+                lambda row: generate_embeddings(json.dumps(row["agent_card"])),
                 axis=1,
             )
             return df
-        logger.info('Done generating embeddings for agent cards')
+        logger.info("Done generating embeddings for agent cards")
     except Exception as e:
-        logger.error(f'An unexpected error occurred : {e}.', exc_info=True)
+        logger.error(f"An unexpected error occurred : {e}.", exc_info=True)
         return None
 
 
@@ -125,14 +118,14 @@ def serve(host, port, transport):  # noqa: PLR0915
         ValueError: If the 'GOOGLE_API_KEY' environment variable is not set.
     """
     init_api_key()
-    logger.info('Starting Agent Cards MCP Server')
-    mcp = FastMCP('agent-cards', host=host, port=port)
+    logger.info("Starting Agent Cards MCP Server")
+    mcp = FastMCP("agent-cards", host=host, port=port)
 
     df = build_agent_card_embeddings()
 
     @mcp.tool(
-        name='find_agent',
-        description='Finds the most relevant agent card based on a natural language query string.',
+        name="find_agent",
+        description="Finds the most relevant agent card based on a natural language query string.",
     )
     def find_agent(query: str) -> str:
         """Finds the most relevant agent card based on a query string.
@@ -152,60 +145,56 @@ def serve(host, port, transport):  # noqa: PLR0915
             to the input query based on embedding similarity.
         """
         query_embedding = genai.embed_content(
-            model=MODEL, content=query, task_type='retrieval_query'
+            model=MODEL, content=query, task_type="retrieval_query"
         )
         dot_products = np.dot(
-            np.stack(df['card_embeddings']), query_embedding['embedding']
+            np.stack(df["card_embeddings"]), query_embedding["embedding"]
         )
         best_match_index = np.argmax(dot_products)
         logger.debug(
-            f'Found best match at index {best_match_index} with score {dot_products[best_match_index]}'
+            f"Found best match at index {best_match_index} with score {dot_products[best_match_index]}"
         )
-        return df.iloc[best_match_index]['agent_card']
+        return df.iloc[best_match_index]["agent_card"]
 
     @mcp.tool()
     def query_places_data(query: str):
         """Query Google Places."""
-        logger.info(f'Search for places : {query}')
-        api_key = os.getenv('GOOGLE_PLACES_API_KEY')
+        logger.info(f"Search for places : {query}")
+        api_key = os.getenv("GOOGLE_PLACES_API_KEY")
         if not api_key:
-            logger.info('GOOGLE_PLACES_API_KEY is not set')
-            return {'places': []}
+            logger.info("GOOGLE_PLACES_API_KEY is not set")
+            return {"places": []}
 
         headers = {
-            'X-Goog-Api-Key': api_key,
-            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress',
-            'Content-Type': 'application/json',
+            "X-Goog-Api-Key": api_key,
+            "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress",
+            "Content-Type": "application/json",
         }
         payload = {
-            'textQuery': query,
-            'languageCode': 'en',
-            'maxResultCount': 10,
+            "textQuery": query,
+            "languageCode": "en",
+            "maxResultCount": 10,
         }
 
         try:
-            response = requests.post(
-                PLACES_API_URL, headers=headers, json=payload
-            )
+            response = requests.post(PLACES_API_URL, headers=headers, json=payload)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.HTTPError as http_err:
-            logger.info(f'HTTP error occurred: {http_err}')
-            logger.info(f'Response content: {response.text}')
+            logger.info(f"HTTP error occurred: {http_err}")
+            logger.info(f"Response content: {response.text}")
         except requests.exceptions.ConnectionError as conn_err:
-            logger.info(f'Connection error occurred: {conn_err}')
+            logger.info(f"Connection error occurred: {conn_err}")
         except requests.exceptions.Timeout as timeout_err:
-            logger.info(f'Timeout error occurred: {timeout_err}')
+            logger.info(f"Timeout error occurred: {timeout_err}")
         except requests.exceptions.RequestException as req_err:
-            logger.info(
-                f'An unexpected error occurred with the request: {req_err}'
-            )
+            logger.info(f"An unexpected error occurred with the request: {req_err}")
         except json.JSONDecodeError:
             logger.info(
-                f'Failed to decode JSON response. Raw response: {response.text}'
+                f"Failed to decode JSON response. Raw response: {response.text}"
             )
 
-        return {'places': []}
+        return {"places": []}
 
     @mcp.tool()
     def query_travel_data(query: str) -> dict:
@@ -224,10 +213,10 @@ def serve(host, port, transport):  # noqa: PLR0915
         }
         """
         # The above is to influence gemini to pickup the tool.
-        logger.info(f'Query sqllite : {query}')
+        logger.info(f"Query sqllite : {query}")
 
-        if not query or not query.strip().upper().startswith('SELECT'):
-            raise ValueError(f'In correct query {query}')
+        if not query or not query.strip().upper().startswith("SELECT"):
+            raise ValueError(f"In correct query {query}")
 
         try:
             with sqlite3.connect(SQLLITE_DB) as conn:
@@ -235,18 +224,18 @@ def serve(host, port, transport):  # noqa: PLR0915
                 cursor = conn.cursor()
                 cursor.execute(query)
                 rows = cursor.fetchall()
-                result = {'results': [dict(row) for row in rows]}
+                result = {"results": [dict(row) for row in rows]}
                 return json.dumps(result)
         except Exception as e:
-            logger.error(f'Exception running query {e}')
+            logger.error(f"Exception running query {e}")
             logger.error(traceback.format_exc())
-            if 'no such column' in e:
+            if "no such column" in e:
                 return {
-                    'error': f'Please check your query, {e}. Use the table schema to regenerate the query'
+                    "error": f"Please check your query, {e}. Use the table schema to regenerate the query"
                 }
-            return {'error': {e}}
+            return {"error": {e}}
 
-    @mcp.resource('resource://agent_cards/list', mime_type='application/json')
+    @mcp.resource("resource://agent_cards/list", mime_type="application/json")
     def get_agent_cards() -> dict:
         """Retrieves all loaded agent cards as a json / dictionary for the MCP resource endpoint.
 
@@ -259,13 +248,11 @@ def serve(host, port, transport):  # noqa: PLR0915
             {'agent_cards': []} if the data cannot be retrieved.
         """
         resources = {}
-        logger.info('Starting read resources')
-        resources['agent_cards'] = df['card_uri'].to_list()
+        logger.info("Starting read resources")
+        resources["agent_cards"] = df["card_uri"].to_list()
         return resources
 
-    @mcp.resource(
-        'resource://agent_cards/{card_name}', mime_type='application/json'
-    )
+    @mcp.resource("resource://agent_cards/{card_name}", mime_type="application/json")
     def get_agent_card(card_name: str) -> dict:
         """Retrieves an agent card as a json / dictionary for the MCP resource endpoint.
 
@@ -276,19 +263,15 @@ def serve(host, port, transport):  # noqa: PLR0915
             A json / dictionary
         """
         resources = {}
-        logger.info(
-            f'Starting read resource resource://agent_cards/{card_name}'
-        )
-        resources['agent_card'] = (
+        logger.info(f"Starting read resource resource://agent_cards/{card_name}")
+        resources["agent_card"] = (
             df.loc[
-                df['card_uri'] == f'resource://agent_cards/{card_name}',
-                'agent_card',
+                df["card_uri"] == f"resource://agent_cards/{card_name}",
+                "agent_card",
             ]
         ).to_list()
 
         return resources
 
-    logger.info(
-        f'Agent cards MCP Server at {host}:{port} and transport {transport}'
-    )
+    logger.info(f"Agent cards MCP Server at {host}:{port} and transport {transport}")
     mcp.run(transport=transport)

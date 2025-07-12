@@ -8,11 +8,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse
 
-
 api_client = ApiClient(
     ApiClientOptions(
-        domain=os.getenv('HR_AUTH0_DOMAIN'),
-        audience=os.getenv('HR_AGENT_AUTH0_AUDIENCE'),
+        domain=os.getenv("HR_AUTH0_DOMAIN"),
+        audience=os.getenv("HR_AGENT_AUTH0_AUDIENCE"),
     )
 )
 
@@ -38,13 +37,9 @@ class OAuth2Middleware(BaseHTTPMiddleware):
 
         # Process the Authentication Requirements Object
         if agent_card.authentication:
-            credentials = json.loads(
-                agent_card.authentication.credentials or '{}'
-            )
-            if 'scopes' in credentials:
-                self.a2a_auth = {
-                    'required_scopes': credentials['scopes'].keys()
-                }
+            credentials = json.loads(agent_card.authentication.credentials or "{}")
+            if "scopes" in credentials:
+                self.a2a_auth = {"required_scopes": credentials["scopes"].keys()}
 
         # # Process the Security Requirements Object
         # for sec_req in agent_card.security or []:
@@ -76,55 +71,51 @@ class OAuth2Middleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # Authenticate the request
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
             return self._unauthorized(
-                'Missing or malformed Authorization header.', request
+                "Missing or malformed Authorization header.", request
             )
 
-        access_token = auth_header.split('Bearer ')[1]
+        access_token = auth_header.split("Bearer ")[1]
 
         try:
             if self.a2a_auth:
                 payload = await api_client.verify_access_token(
                     access_token=access_token
                 )
-                scopes = payload.get('scope', '').split()
+                scopes = payload.get("scope", "").split()
                 missing_scopes = [
-                    s
-                    for s in self.a2a_auth['required_scopes']
-                    if s not in scopes
+                    s for s in self.a2a_auth["required_scopes"] if s not in scopes
                 ]
                 if missing_scopes:
                     return self._forbidden(
-                        f'Missing required scopes: {missing_scopes}', request
+                        f"Missing required scopes: {missing_scopes}", request
                     )
 
         except Exception as e:
-            return self._forbidden(f'Authentication failed: {e}', request)
+            return self._forbidden(f"Authentication failed: {e}", request)
 
         return await call_next(request)
 
     def _forbidden(self, reason: str, request: Request):
-        accept_header = request.headers.get('accept', '')
-        if 'text/event-stream' in accept_header:
+        accept_header = request.headers.get("accept", "")
+        if "text/event-stream" in accept_header:
             return PlainTextResponse(
-                f'error forbidden: {reason}',
+                f"error forbidden: {reason}",
                 status_code=403,
-                media_type='text/event-stream',
+                media_type="text/event-stream",
             )
-        return JSONResponse(
-            {'error': 'forbidden', 'reason': reason}, status_code=403
-        )
+        return JSONResponse({"error": "forbidden", "reason": reason}, status_code=403)
 
     def _unauthorized(self, reason: str, request: Request):
-        accept_header = request.headers.get('accept', '')
-        if 'text/event-stream' in accept_header:
+        accept_header = request.headers.get("accept", "")
+        if "text/event-stream" in accept_header:
             return PlainTextResponse(
-                f'error unauthorized: {reason}',
+                f"error unauthorized: {reason}",
                 status_code=401,
-                media_type='text/event-stream',
+                media_type="text/event-stream",
             )
         return JSONResponse(
-            {'error': 'unauthorized', 'reason': reason}, status_code=401
+            {"error": "unauthorized", "reason": reason}, status_code=401
         )

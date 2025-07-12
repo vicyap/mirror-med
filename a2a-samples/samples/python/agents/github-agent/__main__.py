@@ -3,7 +3,6 @@ import os
 
 import click
 import uvicorn
-
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
@@ -19,40 +18,39 @@ from openai_agent_executor import (
 )
 from starlette.applications import Starlette
 
-
 load_dotenv()
 
 logging.basicConfig()
 
 
 @click.command()
-@click.option('--host', 'host', default='localhost')
-@click.option('--port', 'port', default=10007)
+@click.option("--host", "host", default="localhost")
+@click.option("--port", "port", default=10007)
 def main(host: str, port: int):
     # Verify an API key is set.
-    if not os.getenv('OPENROUTER_API_KEY'):
-        raise ValueError('OPENROUTER_API_KEY environment variable not set')
+    if not os.getenv("OPENROUTER_API_KEY"):
+        raise ValueError("OPENROUTER_API_KEY environment variable not set")
 
     skill = AgentSkill(
-        id='github_repositories',
-        name='GitHub Repositories',
-        description='Query GitHub repositories, recent updates, commits, and project activity',
-        tags=['github', 'repositories', 'commits'],
+        id="github_repositories",
+        name="GitHub Repositories",
+        description="Query GitHub repositories, recent updates, commits, and project activity",
+        tags=["github", "repositories", "commits"],
         examples=[
-            'Show my recent repository updates',
-            'What are the latest commits in my project?',
-            'Search for popular Python repositories with recent activity',
+            "Show my recent repository updates",
+            "What are the latest commits in my project?",
+            "Search for popular Python repositories with recent activity",
         ],
     )
 
     # AgentCard for OpenAI-based agent
     agent_card = AgentCard(
-        name='GitHub Agent',
-        description='An agent that can query GitHub repositories and recent project updates',
-        url=f'http://{host}:{port}/',
-        version='1.0.0',
-        defaultInputModes=['text'],
-        defaultOutputModes=['text'],
+        name="GitHub Agent",
+        description="An agent that can query GitHub repositories and recent project updates",
+        url=f"http://{host}:{port}/",
+        version="1.0.0",
+        defaultInputModes=["text"],
+        defaultOutputModes=["text"],
         capabilities=AgentCapabilities(streaming=True),
         skills=[skill],
     )
@@ -62,9 +60,9 @@ def main(host: str, port: int):
 
     agent_executor = OpenAIAgentExecutor(
         card=agent_card,
-        tools=agent_data['tools'],
-        api_key=os.getenv('OPENROUTER_API_KEY'),
-        system_prompt=agent_data['system_prompt'],
+        tools=agent_data["tools"],
+        api_key=os.getenv("OPENROUTER_API_KEY"),
+        system_prompt=agent_data["system_prompt"],
     )
 
     request_handler = DefaultRequestHandler(
@@ -81,5 +79,5 @@ def main(host: str, port: int):
     uvicorn.run(app, host=host, port=port)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

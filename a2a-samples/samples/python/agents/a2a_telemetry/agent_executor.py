@@ -14,7 +14,6 @@ from google.adk.sessions import InMemorySessionService
 from google.adk.tools import google_search_tool
 from google.genai import types
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -27,9 +26,9 @@ class QnAAgentExecutor(AgentExecutor):
 
     def _init_agent(self):
         self.agent = LlmAgent(
-            model='gemini-2.0-flash-exp',
-            name='question_answer_agent',
-            description='A helpful assistant agent that can answer questions.',
+            model="gemini-2.0-flash-exp",
+            name="question_answer_agent",
+            description="A helpful assistant agent that can answer questions.",
             instruction="""Respond to the query using google search""",
             tools=[google_search_tool.google_search],
         )
@@ -51,7 +50,7 @@ class QnAAgentExecutor(AgentExecutor):
     ) -> None:
         if self.agent is None:
             self._init_agent()
-        logger.debug(f'Executing agent {self.agent.name}')
+        logger.debug(f"Executing agent {self.agent.name}")
 
         query = context.get_user_input()
 
@@ -62,40 +61,36 @@ class QnAAgentExecutor(AgentExecutor):
 
         await updater.start_work()
 
-        content = types.Content(role='user', parts=[types.Part(text=query)])
+        content = types.Content(role="user", parts=[types.Part(text=query)])
         session = await self.runner.session_service.get_session(
             app_name=self.runner.app_name,
-            user_id='123',
+            user_id="123",
             session_id=context.context_id,
         ) or await self.runner.session_service.create_session(
             app_name=self.runner.app_name,
-            user_id='123',
+            user_id="123",
             session_id=context.context_id,
         )
 
         async for event in self.runner.run_async(
-            session_id=session.id, user_id='123', new_message=content
+            session_id=session.id, user_id="123", new_message=content
         ):
-            logger.debug(f'Event from ADK {event}')
+            logger.debug(f"Event from ADK {event}")
             if event.is_final_response():
                 parts = event.content.parts
-                text_parts = [
-                    TextPart(text=part.text) for part in parts if part.text
-                ]
+                text_parts = [TextPart(text=part.text) for part in parts if part.text]
                 await updater.add_artifact(
                     text_parts,
-                    name='result',
+                    name="result",
                 )
                 await updater.complete()
                 break
             await updater.update_status(
-                TaskState.working, message=new_agent_text_message('Working...')
+                TaskState.working, message=new_agent_text_message("Working...")
             )
         else:
-            logger.debug('Agent failed to complete')
+            logger.debug("Agent failed to complete")
             await updater.update_status(
                 TaskState.failed,
-                message=new_agent_text_message(
-                    'Failed to generate a response.'
-                ),
+                message=new_agent_text_message("Failed to generate a response."),
             )

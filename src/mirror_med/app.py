@@ -109,29 +109,32 @@ async def health_check() -> HealthResponse:
 # Mount A2A app dynamically
 from starlette.types import Receive, Scope, Send
 
+
 class DynamicA2AMount:
     """Dynamic mount point for A2A applications."""
-    
+
     def __init__(self, path: str = "/a2a"):
         self.path = path
         self.path_prefix = path.rstrip("/")
-    
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http" and scope["path"].startswith(self.path_prefix):
             # Create a mock request object to extract the base URL
             from starlette.requests import Request as StarletteRequest
+
             request = StarletteRequest(scope, receive)
-            
+
             # Get or create the A2A app for this request
             a2a_app = get_or_create_a2a_app(request)
-            
+
             # Adjust the path to remove the mount prefix
             original_path = scope["path"]
             if original_path.startswith(self.path_prefix):
-                scope["path"] = original_path[len(self.path_prefix):] or "/"
-            
+                scope["path"] = original_path[len(self.path_prefix) :] or "/"
+
             # Call the A2A app
             await a2a_app(scope, receive, send)
+
 
 # Mount the dynamic A2A handler
 app.mount("/a2a", DynamicA2AMount("/a2a"))
