@@ -3,7 +3,7 @@ import json
 import os
 import time
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import httpx
 from a2a.client import A2ACardResolver
@@ -15,10 +15,9 @@ from a2a.types import (
     SendMessageResponse,
     SendMessageSuccessResponse,
     Task,
-    TaskState,
 )
 from azure.ai.agents import AgentsClient
-from azure.ai.agents.models import ListSortOrder, ToolSet
+from azure.ai.agents.models import ListSortOrder
 from azure.identity import DefaultAzureCredential
 from dotenv import load_dotenv
 from remote_agent_connection import (
@@ -146,7 +145,6 @@ class RoutingAgent:
             print(f"Instructions length: {len(instructions)} characters")
 
             # Create tool definition for send_message function
-            from azure.ai.agents.models import FunctionTool
 
             tools = [
                 {

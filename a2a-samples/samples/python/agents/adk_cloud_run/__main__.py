@@ -3,7 +3,6 @@ import functools
 import logging
 import os
 
-import asyncpg
 import click
 import sqlalchemy
 import sqlalchemy.ext.asyncio

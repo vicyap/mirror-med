@@ -9,7 +9,6 @@ import asyncio
 import os
 import traceback
 from collections.abc import AsyncIterator
-from pprint import pformat
 
 import gradio as gr
 from routing_agent import RoutingAgent

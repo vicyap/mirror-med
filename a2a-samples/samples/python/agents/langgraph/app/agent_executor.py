@@ -7,7 +7,6 @@ from a2a.types import (
     InternalError,
     InvalidParamsError,
     Part,
-    Task,
     TaskState,
     TextPart,
     UnsupportedOperationError,

@@ -1,6 +1,4 @@
-import asyncio
 import logging
-import os
 from collections.abc import AsyncIterable
 from typing import Any
 
@@ -10,7 +8,6 @@ from pydantic import BaseModel
 from semantic_kernel.agents import (
     AzureAIAgent,
     AzureAIAgentSettings,
-    AzureAIAgentThread,
 )
 from semantic_kernel.connectors.mcp import MCPSsePlugin
 

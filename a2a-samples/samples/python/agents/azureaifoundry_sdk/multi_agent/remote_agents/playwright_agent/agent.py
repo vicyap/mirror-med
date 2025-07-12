@@ -1,22 +1,15 @@
-import asyncio
 import logging
-import os
-import time
 from collections.abc import AsyncIterable
 from typing import Any
 
-from azure.ai.agents.models import ListSortOrder
 from azure.identity.aio import DefaultAzureCredential
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from semantic_kernel.agents import (
     AzureAIAgent,
     AzureAIAgentSettings,
-    AzureAIAgentThread,
-    ChatCompletionAgent,
 )
-from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
-from semantic_kernel.connectors.mcp import MCPSsePlugin, MCPStdioPlugin
+from semantic_kernel.connectors.mcp import MCPStdioPlugin
 
 # from semantic_kernel.contents import ChatMessageContent
 

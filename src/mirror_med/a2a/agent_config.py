@@ -61,21 +61,22 @@ def get_agent_url_from_request(request):
     return f"{scheme}://{host}"
 
 
-@lru_cache(maxsize=128)
-def _create_cached_app(base_url: str):
-    """Internal function to create and cache A2A apps by base URL."""
-    return create_a2a_app(base_url)
-
-
-def get_or_create_a2a_app(request):
-    """Get or create an A2A app based on the request URL or settings."""
+def get_a2a_base_url(request):
+    """Determine the A2A base URL from request or settings."""
     settings = get_settings()
 
     if settings.a2a_base_url:
         # Use configured base URL if provided
-        base_url = settings.a2a_base_url
+        return settings.a2a_base_url
     else:
         # Dynamically determine base URL from request
-        base_url = get_agent_url_from_request(request) + "/a2a"
+        return get_agent_url_from_request(request) + "/a2a"
 
-    return _create_cached_app(base_url)
+
+@lru_cache(maxsize=128)
+def get_or_create_a2a_app(base_url: str):
+    """Get or create an A2A app for the given base URL.
+
+    This function is cached by base_url to avoid recreating apps.
+    """
+    return create_a2a_app(base_url)

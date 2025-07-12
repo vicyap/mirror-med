@@ -41,7 +41,7 @@ target-version = "py313"
 line-length = 88
 
 [tool.ruff.lint]
-select = ["I"]  # Enable import sorting
+select = ["I", "F401", "E402"]
 
 [tool.ruff.format]
 quote-style = "double"

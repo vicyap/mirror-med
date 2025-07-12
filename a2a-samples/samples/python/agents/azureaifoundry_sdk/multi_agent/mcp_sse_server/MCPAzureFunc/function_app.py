@@ -4,10 +4,7 @@ import json
 import logging
 import os
 import shutil
-import tempfile
-import threading
 import time
-from pathlib import Path
 
 import azure.functions as func
 import git
@@ -208,7 +205,6 @@ def open_vscode_mcp(context) -> str:
     """
     try:
         import platform
-        import shlex
         import subprocess
 
         # Parse the context to get the input parameters
