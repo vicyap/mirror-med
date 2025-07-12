@@ -22,7 +22,6 @@ swap_size_mb = 8192
 #   auto_extend_size_increment = '1GB'
 #   auto_extend_size_limit = '50GB'
 
-
 [http_service]
   internal_port = 8000
   force_https = true
