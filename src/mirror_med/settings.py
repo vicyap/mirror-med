@@ -21,6 +21,9 @@ class Settings(BaseSettings):
 
     # CORS Configuration
     cors_allowed_origins: str = "http://localhost:3000"
+    
+    # A2A Configuration
+    a2a_base_url: str | None = None
 
 
 @lru_cache

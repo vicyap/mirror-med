@@ -1,0 +1,20 @@
+# This docker compose is only for development.
+
+services:
+  app:
+    build:
+      context: .
+    env_file: .env
+    volumes:
+      - ./src:/app/src
+    ports:
+      - "8000:8000"
+    command: >
+      uvicorn mirror_med.app:app
+      --host 0.0.0.0
+      --port 8000
+      --log-level warning
+      --no-access-log
+      --reload
+      --reload-dir src
+      --timeout-graceful-shutdown 1
