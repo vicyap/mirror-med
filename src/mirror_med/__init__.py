@@ -1,3 +1,3 @@
 import weave
 
-weave.init("hack-jul12")  # 🐝
+weave.init("stepandel-none/hack-jul12")
