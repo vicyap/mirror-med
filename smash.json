@@ -1,13 +1,20 @@
 {
-  "height": "5'10\"",
-  "weight": "160 lbs",
   "social_history": {
     "food": "Mostly pescatarian; tracks macros with an app",
-    "exercise": "Runs 3-4 mi, 5x/week",
+    "exercise": {
+      "description": "Runs 3-4 mi, 5x/week",
+      "rating": 8
+    },
     "drugs": "No recreational use",
     "tobacco": "Never",
-    "alcohol": "Craft beer on Saturdays (2 pints)",
-    "caffeine": "One 12-oz cold brew daily",
+    "alcohol": {
+      "description": "Craft beer on Saturdays (2 pints)",
+      "rating": 7
+    },
+    "caffeine": {
+      "description": "One 12-oz cold brew daily",
+      "rating": 9
+    },
     "occupation": "Mechanical engineer, hybrid office/field",
     "sexual_history": "Married, monogamous; last STI screen 2023-11"
   },
@@ -33,8 +40,7 @@
       "name": "Topical clobetasol",
       "dose": "Apply BID",
       "frequency": "PRN flares"
-    },
-    { "name": "Vitamin D3", "dose": "2000 IU", "frequency": "Daily" }
+    }
   ],
   "pcp": {
     "name": "Dr Samantha Blake, MD",
@@ -51,5 +57,53 @@
     "metabolic_disease_risk": "Low",
     "dementia_risk": "Moderate",
     "last_updated": "2025-07-12"
+  },
+  "measurements": {
+    "weight": 180,
+    "height": 72,
+    "bmi": 22,
+    "blood_pressure": 120,
+    "blood_sugar": 100,
+    "cholesterol": 200,
+    "hdl": 60,
+    "ldl": 100,
+    "triglycerides": 150
+  },
+  "alcohol": {
+    "current": "2 pints on Saturdays",
+    "recommendation": "Limit to 1 pint on Saturdays"
+  },
+  "sleep": {
+    "current": "6 hours per night",
+    "recommendation": "Aim for 7-8 hours nightly"
+  },
+  "exercise": {
+    "current": "once a week",
+    "recommendation": "Aim for 2-3 times per week"
+  },
+
+  "recommendations": {
+    "alcohol": {
+      "description": "Limit to 1 pint on Saturdays",
+      "rating": 9
+    },
+    "sleep": {
+      "description": "Aim for 7-8 hours nightly",
+      "rating": 8
+    },
+    "exercise": {
+      "description": "Add 1 more running day per week",
+      "rating": 7
+    },
+    "supplements": [
+      {
+        "description": "Take 2000 IU Vitamin D3 daily",
+        "rating": 9
+      },
+      {
+        "description": "Consider 1000 mg Omega-3 daily",
+        "rating": 7
+      }
+    ]
   }
 }
