@@ -3,7 +3,6 @@ import warnings
 from contextlib import asynccontextmanager
 from typing import Any
 
-import weave
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -15,6 +14,7 @@ from mirror_med.logging import get_logger
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pydantic")
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="weave")
 
+# import weave
 # weave.init("stepandel-none/hack-jul12")
 
 
