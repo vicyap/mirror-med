@@ -1,10 +1,16 @@
 import asyncio
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from crewai import LLM, Agent, Crew, Process, Task
+from crewai.task import TaskOutput
 
 from mirror_med.logging import get_logger
+
+
+def validate_specialist_output(result: TaskOutput) -> Tuple[bool, Any]:
+    """Validate specialist task output contains recommendation."""
+    return (True, str(result)) if len(str(result)) > 20 else (False, "Output too short")
 
 
 def flatten_patient_data(patient_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -66,31 +72,20 @@ def create_pcp_manager_agent() -> Agent:
     """Create and return the PCP manager agent."""
     # Configure LLM for the agent
     agent_llm = LLM(
-        model="openai/gpt-4.1-nano"
+        model="openai/gpt-4.1-nano", temperature=0.4
     )  # OpenAI's latest and fastest model (released April 2025)
 
     # Primary Care Physician Manager
     return Agent(
         role="Primary Care Physician Manager",
         goal="Coordinate comprehensive patient health assessment, delegate supplement recommendations to the nutritionist, and compile all findings into a complete JSON response",
-        backstory="""You are a board-certified Internal Medicine physician with 20 years 
-        of experience in primary care and preventive medicine. As the lead physician manager, you excel 
-        at coordinating comprehensive health assessments by delegating to specialist colleagues. 
-        
-        Your workflow:
-        1. Analyze patient data for alcohol, sleep, and exercise recommendations
-        2. DELEGATE supplement recommendations to the 'nutritionist' coworker
-        3. Receive and incorporate the nutritionist's supplement recommendations
-        4. Compile ALL recommendations into a single, complete JSON response
-        
-        You MUST produce a final JSON output that includes recommendations for alcohol, sleep, 
-        exercise, AND the nutritionist's supplement recommendations, plus an updated health forecast.
-        Never end your work with a delegation action - always compile the final JSON response.""",
+        backstory="Board-certified physician manager coordinating health assessments by delegating to specialists and compiling results.",
         tools=[],
         verbose=True,
         allow_delegation=True,
         max_iter=10,
         max_rpm=None,
+        cache=True,
         llm=agent_llm,
     )
 
@@ -99,28 +94,20 @@ def create_compiler_agent() -> Agent:
     """Create and return the results compiler agent."""
     # Configure LLM for the agent
     agent_llm = LLM(
-        model="openai/gpt-4.1-nano"
+        model="openai/gpt-4.1-nano", temperature=0.4
     )  # OpenAI's latest and fastest model (released April 2025)
 
     # Results Compiler Agent
     return Agent(
         role="Health Assessment Compiler",
         goal="Compile all health recommendations from specialists into a complete JSON response",
-        backstory="""You are a medical data specialist who excels at compiling comprehensive 
-        health assessments. Your role is to gather all recommendations from the team (alcohol, 
-        sleep, exercise, and supplements) and format them into the required JSON structure.
-        
-        You ensure that:
-        1. All recommendations are included with proper ratings (1-10)
-        2. The health forecast is updated based on the recommendations
-        3. The output is valid JSON with no additional text
-        
-        You work at the end of the assessment process to compile the final report.""",
+        backstory="Medical data specialist who compiles health assessments into structured JSON reports.",
         tools=[],
         verbose=True,
         allow_delegation=False,
         max_rpm=None,
         max_iter=5,
+        cache=True,
         llm=agent_llm,
     )
 
@@ -129,23 +116,19 @@ def create_alcohol_specialist_agent() -> Agent:
     """Create and return the alcohol consumption specialist agent."""
     # Configure LLM for the agent
     agent_llm = LLM(
-        model="openai/gpt-4.1-nano"
+        model="openai/gpt-4.1-nano", temperature=0.4
     )  # OpenAI's latest and fastest model (released April 2025)
 
     return Agent(
         role="Alcohol Consumption Specialist",
         goal="Analyze patient alcohol consumption patterns and provide evidence-based recommendations for optimization",
-        backstory="""You are a certified addiction counselor and behavioral health specialist 
-        with expertise in alcohol consumption patterns and their health impacts. You have 
-        extensive experience in harm reduction strategies and lifestyle optimization. You 
-        understand the complex relationship between alcohol, health conditions, medications, 
-        and overall well-being. You provide balanced, non-judgmental recommendations that 
-        respect patient autonomy while promoting optimal health outcomes.""",
+        backstory="Certified addiction counselor specializing in alcohol consumption patterns and harm reduction strategies.",
         tools=[],
         verbose=True,
         allow_delegation=False,
         max_rpm=None,
         max_iter=5,
+        cache=True,
         llm=agent_llm,
     )
 
@@ -154,23 +137,19 @@ def create_sleep_specialist_agent() -> Agent:
     """Create and return the sleep quality specialist agent."""
     # Configure LLM for the agent
     agent_llm = LLM(
-        model="openai/gpt-4.1-nano"
+        model="openai/gpt-4.1-nano", temperature=0.4
     )  # OpenAI's latest and fastest model (released April 2025)
 
     return Agent(
         role="Sleep Quality Specialist",
         goal="Evaluate patient sleep patterns and provide evidence-based recommendations for sleep optimization",
-        backstory="""You are a board-certified sleep medicine specialist with expertise 
-        in sleep disorders and circadian rhythm optimization. You have 12 years of experience 
-        helping patients improve their sleep quality through behavioral interventions, 
-        sleep hygiene practices, and lifestyle modifications. You understand the critical 
-        role of sleep in metabolic health, cardiovascular function, and cognitive performance. 
-        You provide practical, actionable recommendations tailored to individual circumstances.""",
+        backstory="Board-certified sleep medicine specialist with 12+ years experience in sleep optimization and behavioral interventions.",
         tools=[],
         verbose=True,
         allow_delegation=False,
         max_rpm=None,
         max_iter=5,
+        cache=True,
         llm=agent_llm,
     )
 
@@ -179,24 +158,19 @@ def create_exercise_specialist_agent() -> Agent:
     """Create and return the exercise and physical activity specialist agent."""
     # Configure LLM for the agent
     agent_llm = LLM(
-        model="openai/gpt-4.1-nano"
+        model="openai/gpt-4.1-nano", temperature=0.4
     )  # OpenAI's latest and fastest model (released April 2025)
 
     return Agent(
         role="Exercise and Physical Activity Specialist",
         goal="Assess patient exercise habits and provide personalized recommendations for physical activity optimization",
-        backstory="""You are a certified exercise physiologist and personal trainer with 
-        a master's degree in kinesiology. You specialize in designing safe, effective 
-        exercise programs for individuals with various health conditions and fitness levels. 
-        You understand the importance of progressive overload, recovery, and individualization. 
-        You excel at creating sustainable exercise recommendations that balance cardiovascular 
-        health, strength, flexibility, and enjoyment while considering medical conditions 
-        and physical limitations.""",
+        backstory="Certified exercise physiologist specializing in personalized fitness programs for various health conditions.",
         tools=[],
         verbose=True,
         allow_delegation=False,
         max_rpm=None,
         max_iter=5,
+        cache=True,
         llm=agent_llm,
     )
 
@@ -205,27 +179,20 @@ def create_nutritionist_agent() -> Agent:
     """Create and return the clinical nutritionist agent."""
     # Configure LLM for the agent
     agent_llm = LLM(
-        model="openai/gpt-4.1-nano"
+        model="openai/gpt-4.1-nano", temperature=0.4
     )  # OpenAI's latest and fastest model (released April 2025)
 
     # Clinical Nutritionist
     return Agent(
         role="Nutritionist",
         goal="Analyze patient data and provide evidence-based nutritional supplement recommendations",
-        backstory="""You are a registered dietitian and clinical nutritionist with expertise 
-        in nutritional biochemistry and supplementation protocols. You have 15 years of experience 
-        in personalized nutrition and evidence-based supplementation. You excel at analyzing 
-        patient health data, medications, and conditions to recommend appropriate nutritional 
-        supplements. You understand drug-nutrient interactions, bioavailability, dosing protocols, 
-        and quality standards for supplements. You follow guidelines from the Academy of Nutrition 
-        and Dietetics, and stay current with nutritional research. You provide specific supplement 
-        recommendations with dosages and expected benefits based on individual patient needs, 
-        always prioritizing safety and efficacy.""",
+        backstory="Registered dietitian with 15+ years expertise in evidence-based supplementation and nutritional biochemistry.",
         tools=[],
         verbose=True,
         allow_delegation=False,
         max_rpm=None,
         max_iter=5,
+        cache=True,
         llm=agent_llm,
     )
 
@@ -375,18 +342,10 @@ def create_supplements_task(agent: Agent) -> Task:
     """
 
     expected_output = """
-    Provide a detailed list of nutritional supplement recommendations in the following format:
-    
-    For each recommended supplement:
-    - Name and specific form (e.g., "Vitamin D3 (cholecalciferol)")
-    - Dosage and frequency (e.g., "2000 IU daily")
-    - Best time to take and any special instructions
-    - Expected benefits specific to this patient
-    - Any interactions or precautions to consider
-    - Quality indicators to look for when purchasing
-    
-    Prioritize supplements with the strongest evidence for this patient's conditions and risk factors.
-    Include at least 2-3 well-justified recommendations.
+    Provide 2-3 evidence-based supplement recommendations. For each:
+    - Name, form, dosage (e.g., "Vitamin D3 2000 IU daily")
+    - Expected benefits for this patient
+    - Any important interactions or timing considerations
     """
 
     return Task(
@@ -394,6 +353,8 @@ def create_supplements_task(agent: Agent) -> Task:
         expected_output=expected_output,
         agent=agent,
         async_execution=True,  # Enable async execution
+        guardrail=validate_specialist_output,
+        max_retries=3,
     )
 
 
@@ -433,14 +394,10 @@ def create_alcohol_task(agent: Agent) -> Task:
     """
 
     expected_output = """
-    Provide detailed alcohol consumption recommendations in the following format:
-    
-    - Specific recommendation for alcohol consumption optimization
-    - Consider current intake level and health conditions
-    - Suggest gradual changes if needed
-    - Include specific limits (e.g., drinks per week)
-    - Explain health benefits of recommended changes
-    - Provide a rating (1-10) for potential health improvement
+    Provide alcohol consumption recommendations:
+    - Specific recommendation with limits (e.g., drinks per week)
+    - Key health benefits of following this recommendation
+    - Rating (1-10) for potential health improvement
     """
 
     return Task(
@@ -448,6 +405,8 @@ def create_alcohol_task(agent: Agent) -> Task:
         expected_output=expected_output,
         agent=agent,
         async_execution=True,  # Enable async execution
+        guardrail=validate_specialist_output,
+        max_retries=3,
     )
 
 
@@ -489,14 +448,10 @@ def create_sleep_task(agent: Agent) -> Task:
     """
 
     expected_output = """
-    Provide detailed sleep optimization recommendations in the following format:
-    
-    - Specific sleep schedule recommendations
-    - Sleep hygiene practices to implement
-    - Environmental modifications if needed
-    - Behavioral interventions for better sleep
-    - Expected improvements in health metrics
-    - Provide a rating (1-10) for potential health improvement
+    Provide sleep optimization recommendations:
+    - Specific sleep schedule and duration target
+    - Key sleep hygiene practices to implement
+    - Rating (1-10) for potential health improvement
     """
 
     return Task(
@@ -504,6 +459,8 @@ def create_sleep_task(agent: Agent) -> Task:
         expected_output=expected_output,
         agent=agent,
         async_execution=True,  # Enable async execution
+        guardrail=validate_specialist_output,
+        max_retries=3,
     )
 
 
@@ -545,14 +502,10 @@ def create_exercise_task(agent: Agent) -> Task:
     """
 
     expected_output = """
-    Provide detailed exercise recommendations in the following format:
-    
-    - Specific weekly exercise plan (days, duration, intensity)
-    - Types of activities recommended
-    - Progression plan over next 3-6 months
-    - Safety considerations and precautions
-    - Expected health improvements
-    - Provide a rating (1-10) for potential health improvement
+    Provide exercise recommendations:
+    - Weekly exercise plan (days, duration, intensity)
+    - Specific activities recommended
+    - Rating (1-10) for potential health improvement
     """
 
     return Task(
@@ -560,6 +513,8 @@ def create_exercise_task(agent: Agent) -> Task:
         expected_output=expected_output,
         agent=agent,
         async_execution=True,  # Enable async execution
+        guardrail=validate_specialist_output,
+        max_retries=3,
     )
 
 
