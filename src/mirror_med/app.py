@@ -3,7 +3,7 @@ import tempfile
 import warnings
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -96,6 +96,22 @@ class VisitInput(BaseModel):
 class RecommendationItem(BaseModel):
     description: str
     rating: int
+    evidence_based: bool = Field(
+        default=True, description="Whether recommendation is based on EXA search"
+    )
+
+
+class EvidenceUrls(BaseModel):
+    alcohol: list[str] = Field(
+        ..., description="URLs from EXA search for alcohol evidence"
+    )
+    sleep: list[str] = Field(..., description="URLs from EXA search for sleep evidence")
+    exercise: list[str] = Field(
+        ..., description="URLs from EXA search for exercise evidence"
+    )
+    supplements: list[str] = Field(
+        ..., description="URLs from EXA search for supplements evidence"
+    )
 
 
 class Recommendations(BaseModel):
@@ -107,6 +123,7 @@ class Recommendations(BaseModel):
 
 class VisitOutput(VisitInput):
     recommendations: Recommendations
+    evidence_urls: Optional[EvidenceUrls] = None
 
 
 def _get_stub_recommendations_and_forecast() -> dict:
@@ -115,15 +132,32 @@ def _get_stub_recommendations_and_forecast() -> dict:
 
     return {
         "recommendations": {
-            "alcohol": {"description": "Limit to 1 drink per day", "rating": 8},
-            "sleep": {"description": "Aim for 7-8 hours nightly", "rating": 9},
+            "alcohol": {
+                "description": "Limit to 1 drink per day",
+                "rating": 8,
+                "evidence_based": False,
+            },
+            "sleep": {
+                "description": "Aim for 7-8 hours nightly",
+                "rating": 9,
+                "evidence_based": False,
+            },
             "exercise": {
                 "description": "30 minutes of moderate activity, 5 days/week",
                 "rating": 8,
+                "evidence_based": False,
             },
             "supplements": [
-                {"description": "Take 2000 IU Vitamin D3 daily", "rating": 9},
-                {"description": "Consider 1000 mg Omega-3 daily", "rating": 7},
+                {
+                    "description": "Take 2000 IU Vitamin D3 daily",
+                    "rating": 9,
+                    "evidence_based": False,
+                },
+                {
+                    "description": "Consider 1000 mg Omega-3 daily",
+                    "rating": 7,
+                    "evidence_based": False,
+                },
             ],
         },
         "forecast": {
@@ -204,6 +238,10 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
                 visit_dict["recommendations"] = crew_result["recommendations"]
             if "forecast" in crew_result:
                 visit_dict["forecast"] = crew_result["forecast"]
+            # Extract evidence URLs if present
+            if "evidence_urls" in crew_result:
+                visit_dict["evidence_urls"] = crew_result["evidence_urls"]
+                logger.info("Successfully included EXA evidence URLs")
             logger.info("Successfully generated crew recommendations and forecast")
         else:
             # Invalid crew output format

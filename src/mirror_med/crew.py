@@ -3,6 +3,7 @@ from typing import Any, Dict, Tuple
 
 from crewai import LLM, Agent, Crew, Process, Task
 from crewai.task import TaskOutput
+from crewai_tools import EXASearchTool
 
 from mirror_med.logging import get_logger
 
@@ -197,12 +198,15 @@ def create_single_pcp_agent() -> Agent:
     # Configure LLM for the agent
     agent_llm = LLM(model=AGENT_LLM_MODEL, temperature=AGENT_LLM_TEMPERATURE)
 
-    # Comprehensive Primary Care Physician
+    # Initialize the EXA search tool for quick evidence-based medical research
+    exa_tool = EXASearchTool()
+
+    # Primary Care Physician
     return Agent(
-        role="Comprehensive Primary Care Physician",
+        role="Primary Care Physician",
         goal="Provide complete health assessment including alcohol optimization, sleep improvement, exercise recommendations, and targeted supplement suggestions to maximize life expectancy and minimize disease risk",
         backstory="Board-certified physician with 20+ years experience in preventive medicine, nutrition, sleep medicine, and exercise physiology. Expert at creating integrated health plans that synergistically improve all health metrics for maximum longevity gains.",
-        tools=[],
+        tools=[exa_tool],
         verbose=True,
         allow_delegation=False,
         max_rpm=None,
@@ -574,6 +578,13 @@ def create_single_pcp_task(agent: Agent) -> Task:
         Task: The configured comprehensive health assessment task
     """
     task_description = """
+    ⚠️ MANDATORY TOOL USAGE REQUIREMENT ⚠️
+    You MUST use the EXA search tool for EVERY recommendation. General knowledge is NOT acceptable.
+    ❌ DO NOT provide any recommendation without first searching for current evidence
+    ✅ ALWAYS search before making any health recommendation
+    ❌ DO NOT rely on memory - use the tool for 2024-2025 data
+    ✅ REQUIRED: At least 4 searches total (minimum 1 per recommendation category)
+    
     As a Comprehensive Primary Care Physician, provide a complete health assessment for this patient with the following data:
     
     PATIENT INFORMATION:
@@ -603,7 +614,19 @@ def create_single_pcp_task(agent: Agent) -> Task:
       * Metabolic disease risk: {metabolic_risk}
     
     Provide comprehensive health improvement recommendations for ALL of the following areas:
+
+    ⚠️ CRITICAL OUTPUT FORMAT REQUIREMENT ⚠️
+    While you should analyze thoroughly, your final recommendation descriptions MUST be:
+    - MAXIMUM 80 characters per recommendation
+    - Simple, actionable statements only
+    - NO explanations, NO justifications, NO context
     
+    ❌ BAD (too long): "Reduce alcohol intake to no more than 1 pint of craft beer on Saturdays, aiming for weekly limit of 1 standard drink to lower cardiovascular and dementia risks"
+    ✅ GOOD (concise): "Limit to 1 drink per week"
+    
+    ❌ BAD: "Increase sleep duration to 7-8 hours per night and establish consistent sleep schedule"
+    ✅ GOOD: "Sleep 7-8 hours nightly"
+
     1. ALCOHOL CONSUMPTION:
        - Analyze current intake and interactions with medications
        - Provide specific limits targeting cardiovascular and dementia risk reduction
@@ -623,10 +646,35 @@ def create_single_pcp_task(agent: Agent) -> Task:
        - Aim for +5-10 years life expectancy gain
     
     4. NUTRITIONAL SUPPLEMENTS:
-       - Recommend 2-3 evidence-based supplements with specific dosages
+       - Recommend at least 1 evidence-based supplements with specific dosages
        - Consider drug-nutrient interactions with current medications
        - Focus on cardiovascular protection (omega-3, CoQ10 if indicated)
        - Include metabolic support (vitamin D, magnesium) and cognitive protection
+    
+    📋 STEP-BY-STEP TOOL USAGE PROTOCOL:
+    Step 1: Use EXA tool to search for current alcohol consumption guidelines
+    Step 2: Use EXA tool to search for evidence-based sleep optimization
+    Step 3: Use EXA tool to search for exercise recommendations
+    Step 4: Use EXA tool to search for supplement dosages and interactions
+    
+    ⚠️ CRITICAL: For EACH search, you MUST extract and save the URLs of the sources found.
+    The EXA tool returns search results with URLs - you MUST include these URLs in your response.
+    
+    Example searches (MANDATORY - adapt these to patient specifics):
+    * "alcohol limits cardiovascular disease hypertension 2025"
+    * "sleep optimization metabolic syndrome evidence 2024"
+    * "HIIT strength training cardiovascular risk reduction 2025"
+    * "vitamin D magnesium dosage cardiovascular health 2024"
+    
+    ✓ VALIDATION CHECKLIST (must complete ALL):
+    □ Searched for alcohol guidelines using EXA and extracted URLs
+    □ Searched for sleep recommendations using EXA and extracted URLs
+    □ Searched for exercise protocols using EXA and extracted URLs
+    □ Searched for supplement information using EXA and extracted URLs
+    
+    If any checkbox is incomplete, GO BACK and use the tool.
+    Each recommendation MUST be based on the sources you found.
+    You MUST include 1-3 URLs per category in the evidence_urls section.
     
     CRITICAL: Your recommendations must show substantial, realistic improvements:
     - Life expectancy: Increase by 5-10 years from baseline
@@ -634,32 +682,43 @@ def create_single_pcp_task(agent: Agent) -> Task:
     - Energy level: Improve to 'High' if currently Low/Moderate
     - Metabolic disease risk: Reduce to 'Low' where possible
     - Dementia risk: Reduce to 'Low' where possible
-    
-    Ensure all recommendations work synergistically for maximum health gains.
+
+
+    IMPORTANT: Each recommendation description MUST be under 80 characters. NO explanations, just the core action.
     """
 
     expected_output = """
     IMPORTANT: Provide your response ONLY as valid JSON with no additional text or markdown formatting.
     
-    Return a comprehensive health improvement plan with updated forecast in exactly this JSON format:
+    Return a comprehensive health improvement plan with MANDATORY evidence URLs in exactly this JSON format:
     {
+        "evidence_urls": {
+            "alcohol": ["https://url1.com", "https://url2.com"],
+            "sleep": ["https://url3.com"],
+            "exercise": ["https://url4.com", "https://url5.com"],
+            "supplements": ["https://url6.com", "https://url7.com"]
+        },
         "recommendations": {
             "alcohol": {
-                "description": "Specific recommendation for alcohol consumption",
-                "rating": <integer 1-10 indicating future benefit>
+                "description": "Limit to 1 drink per week",
+                "rating": <integer 1-10 indicating future benefit>,
+                "evidence_based": true
             },
             "sleep": {
-                "description": "Specific recommendation for sleep improvement", 
-                "rating": <integer 1-10 indicating future benefit>
+                "description": "Sleep 7-8 hours nightly", 
+                "rating": <integer 1-10 indicating future benefit>,
+                "evidence_based": true
             },
             "exercise": {
-                "description": "Specific recommendation for exercise routine",
-                "rating": <integer 1-10 indicating future benefit>
+                "description": "150 min cardio + 2x strength training weekly",
+                "rating": <integer 1-10 indicating future benefit>,
+                "evidence_based": true
             },
             "supplements": [
                 {
-                    "description": "Specific supplement recommendation with dosage",
-                    "rating": <integer 1-10 indicating future benefit>
+                    "description": "Omega-3 1000mg daily",
+                    "rating": <integer 1-10 indicating future benefit>,
+                    "evidence_based": true
                 }
             ]
         },
@@ -673,8 +732,13 @@ def create_single_pcp_task(agent: Agent) -> Task:
         }
     }
     
-    Ensure all ratings are integers between 1-10. Include at least 1 supplement recommendation.
-    The forecast should show optimistic, positive improvements based on following all recommendations.
+    ALL recommendations MUST have evidence_based: true and be based on the URLs you found.
+    The evidence_urls section MUST contain actual URLs from your EXA searches (not placeholder URLs).
+    Each category in evidence_urls MUST have at least 1 URL from your searches.
+    Recommendations without corresponding URLs are INVALID and will be rejected.
+    
+    FINAL REMINDER: Each recommendation description MUST be under 80 characters!
+    Count the characters! If it's over 80, shorten it further.
     """
 
     return Task(
