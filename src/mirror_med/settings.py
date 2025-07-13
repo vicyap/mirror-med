@@ -19,9 +19,6 @@ class Settings(BaseSettings):
     # OpenAI Configuration
     # openai_api_key: str
 
-    # CORS Configuration
-    cors_allowed_origins: str = "*"
-
     # A2A Configuration
     # a2a_base_url: str = "https://lima.llama-bull.ts.net/"
     a2a_base_url: str = ""

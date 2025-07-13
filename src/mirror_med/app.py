@@ -142,14 +142,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add CORS middleware for WebSocket support
-settings = get_settings()
+# Add CORS middleware - allow all origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_allowed_origins.split(","),
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Origin"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

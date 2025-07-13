@@ -56,7 +56,7 @@ class PatientHealthCrew:
             tools=[self.search_tool],
             verbose=True,
             allow_delegation=True,  # Critical for hierarchical process
-            max_iter=30,
+            max_iter=3,
             llm=agent_llm,
         )
 
@@ -121,7 +121,7 @@ class PatientHealthCrew:
             Task: The configured health assessment task
         """
         task_description = f"""
-        Conduct a comprehensive health assessment for a patient visit with the following data:
+        Conduct a brief health assessment for a patient visit with the following data:
         
         PATIENT INFORMATION:
         - Social History:
@@ -148,16 +148,16 @@ class PatientHealthCrew:
           * Dementia risk: {patient_data["forecast"]["dementia_risk"]}
           * Metabolic disease risk: {patient_data["forecast"]["metabolic_disease_risk"]}
         
-        As the Primary Care Physician, coordinate with your specialist team to develop a comprehensive 
-        health improvement plan. You should:
+        As the Primary Care Physician, coordinate with your specialist team to develop a health improvement plan.
+        
+        You should:
         
         1. Assess alcohol consumption and provide specific recommendations for optimization
         2. Delegate sleep assessment to the Sleep Medicine Specialist
         3. Delegate exercise evaluation to the Exercise Physiologist  
         4. Delegate nutritional supplement assessment to the Nutrition Specialist
         
-        Synthesize all specialist recommendations into a cohesive plan that addresses the patient's
-        health goals and risk factors.
+        Synthesize all specialist recommendations into a cohesive plan that addresses the patient's risk factors.
         """
 
         expected_output = """
@@ -165,27 +165,24 @@ class PatientHealthCrew:
         {
             "alcohol": {
                 "description": "Specific recommendation for alcohol consumption",
-                "rating": <integer 1-10 indicating benefit>
+                "rating": <integer 1-10 indicating future benefit>
             },
             "sleep": {
                 "description": "Specific recommendation for sleep improvement", 
-                "rating": <integer 1-10 indicating benefit>
+                "rating": <integer 1-10 indicating future benefit>
             },
             "exercise": {
                 "description": "Specific recommendation for exercise routine",
-                "rating": <integer 1-10 indicating benefit>
+                "rating": <integer 1-10 indicating future benefit>
             },
             "supplements": [
                 {
                     "description": "Specific supplement recommendation with dosage",
-                    "rating": <integer 1-10 indicating benefit>
+                    "rating": <integer 1-10 indicating future benefit>
                 },
                 ...
             ]
         }
-        
-        Ensure each recommendation is specific, actionable, and evidence-based. The rating should 
-        reflect the importance and potential impact of each recommendation on the patient's health.
         """
 
         return Task(
