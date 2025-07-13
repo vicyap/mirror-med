@@ -218,7 +218,7 @@ class PatientHealthCrew:
             verbose=True,
             memory=True,  # Enable memory for better context
             max_rpm=30,  # Rate limiting
-            step_callback=lambda step: self.logger.info("Step completed", step=step),
+            # step_callback=lambda step: self.logger.info("Step completed", step=step),  # Removed due to serialization issues
         )
 
 

@@ -170,7 +170,7 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
         # Run the crew in a thread with timeout
         logger.info("Running patient health assessment crew")
         crew_result = await asyncio.wait_for(
-            asyncio.to_thread(run_patient_health_assessment, visit_dict), timeout=300
+            asyncio.to_thread(run_patient_health_assessment, visit_dict), timeout=3
         )
 
         # If crew returned valid recommendations
