@@ -2,18 +2,18 @@
   "social_history": {
     "food": "Mostly pescatarian; tracks macros with an app",
     "exercise": {
-      "description": "Runs 3-4 mi, 5x/week",
+      "description": "Runs 3–4 mi, 5×/week",
       "rating": 8
     },
     "drugs": "No recreational use",
     "tobacco": "Never",
     "alcohol": {
       "description": "Craft beer on Saturdays (2 pints)",
-      "rating": 7
+      "rating": 6
     },
-    "caffeine": {
-      "description": "One 12-oz cold brew daily",
-      "rating": 9
+    "sleep": {
+      "description": "6–7 hours/night",
+      "rating": 8
     },
     "occupation": "Mechanical engineer, hybrid office/field",
     "sexual_history": "Married, monogamous; last STI screen 2023-11"
@@ -27,6 +27,7 @@
   "surgical_history": [
     { "procedure": "Right ACL reconstruction", "year": 2016 }
   ],
+
   "hospitalizations": [
     { "reason": "Appendicitis", "location": "Mayo Clinic", "year": 2008 }
   ],
@@ -40,7 +41,8 @@
       "name": "Topical clobetasol",
       "dose": "Apply BID",
       "frequency": "PRN flares"
-    }
+    },
+    { "name": "Vitamin D3", "dose": "2000 IU", "frequency": "Daily" }
   ],
   "pcp": {
     "name": "Dr Samantha Blake, MD",
@@ -61,25 +63,12 @@
   "measurements": {
     "weight": 180,
     "height": 72,
-    "bmi": 22,
     "blood_pressure": 120,
     "blood_sugar": 100,
     "cholesterol": 200,
     "hdl": 60,
     "ldl": 100,
     "triglycerides": 150
-  },
-  "alcohol": {
-    "current": "2 pints on Saturdays",
-    "recommendation": "Limit to 1 pint on Saturdays"
-  },
-  "sleep": {
-    "current": "6 hours per night",
-    "recommendation": "Aim for 7-8 hours nightly"
-  },
-  "exercise": {
-    "current": "once a week",
-    "recommendation": "Aim for 2-3 times per week"
   },
 
   "recommendations": {

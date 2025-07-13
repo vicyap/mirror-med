@@ -83,9 +83,6 @@ class VisitInput(BaseModel):
     pcp: Any
     forecast: Any
     measurements: Any
-    alcohol: Any
-    sleep: Any
-    exercise: Any
 
 
 class RecommendationItem(BaseModel):
