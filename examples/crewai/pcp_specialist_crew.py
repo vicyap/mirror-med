@@ -9,15 +9,17 @@ and health educator working together to provide complete patient care.
 Requirements:
 - crewai
 - crewai_tools
+- exa_py
 """
 
 
-from crewai_tools import FileReadTool, SerperDevTool
+from crewai_tools import FileReadTool, EXASearchTool
 
 from crewai import Agent, Crew, Process, Task
 
 # Initialize tools
-search_tool = SerperDevTool()  # For medical literature searches
+# EXASearchTool requires EXA_API_KEY environment variable to be set
+search_tool = EXASearchTool()  # For medical literature searches
 file_tool = FileReadTool()  # For accessing patient records
 
 # Define PCP Specialist Agents

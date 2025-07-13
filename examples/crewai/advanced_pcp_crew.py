@@ -10,16 +10,18 @@ and guideline adherence verification.
 Requirements:
 - crewai
 - crewai_tools
+- exa_py
 """
 
 from typing import Any, Dict
 
-from crewai_tools import FileReadTool, SerperDevTool
+from crewai_tools import FileReadTool, EXASearchTool
 
 from crewai import Agent, Crew, Process, Task
 
 # Initialize tools
-search_tool = SerperDevTool()
+# EXASearchTool requires EXA_API_KEY environment variable to be set
+search_tool = EXASearchTool()
 file_tool = FileReadTool()
 
 # Define PCP Specialist Agents

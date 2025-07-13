@@ -10,7 +10,7 @@ swap_size_mb = 8192
 [build]
 
 [env]
-  A2A_BASE_URL = "https://mirror-med-api.fly.dev/"
+  # A2A_BASE_URL = "https://mirror-med-api.fly.dev/"
 
 # [deploy]
 #   strategy = "bluegreen"

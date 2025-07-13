@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     )
 
     # A2A Configuration
-    a2a_base_url: str = "https://lima.llama-bull.ts.net/"
+    # a2a_base_url: str = "https://lima.llama-bull.ts.net/"
+    a2a_base_url: str = ""
 
 
 @lru_cache

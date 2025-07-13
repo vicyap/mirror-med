@@ -57,7 +57,7 @@ An enhanced version with additional capabilities:
 uv sync
 
 # Install additional tools if needed
-uv add crewai-tools
+uv add crewai-tools exa_py
 ```
 
 ## Configuration
@@ -68,8 +68,8 @@ Before running the examples, ensure you have the necessary API keys:
 # Set OpenAI API key (required for agent LLMs)
 export OPENAI_API_KEY="your-openai-api-key"
 
-# Set Serper API key (required for web search tool)
-export SERPER_API_KEY="your-serper-api-key"
+# Set EXA API key (required for web search functionality)
+export EXA_API_KEY="your-exa-api-key"
 ```
 
 ## Running the Examples
