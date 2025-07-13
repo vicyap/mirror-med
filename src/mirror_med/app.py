@@ -1,13 +1,16 @@
 import asyncio
+import tempfile
 import warnings
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from mirror_med.crews import run_patient_health_assessment
+from mirror_med.crew import run_patient_health_assessment
+from mirror_med.healthkit_converter import process_health_export
 from mirror_med.logging import get_logger
 
 # Suppress deprecation warnings from third-party packages
@@ -184,7 +187,7 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
     # Convert input to dict
     visit_dict = visit_data.model_dump()
 
-    timeout = 10
+    timeout = 60
 
     try:
         # Run the crew in a thread with timeout
@@ -223,6 +226,41 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
 
     # Return complete output
     return VisitOutput(**visit_dict)
+
+
+@app.post("/intake-apple-health")
+async def intake_apple_health(file: UploadFile = File(...)):
+    """Process Apple Health export zip and return SMASH format data."""
+    # Validate file type
+    if not file.filename.endswith(".zip"):
+        raise HTTPException(status_code=400, detail="File must be a zip archive")
+
+    # Process the upload
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp_file:
+            # Save uploaded file
+            content = await file.read()
+            tmp_file.write(content)
+            tmp_path = Path(tmp_file.name)
+
+        # Process health export
+        smash_data = process_health_export(tmp_path)
+
+        # Clean up
+        tmp_path.unlink()
+
+        return smash_data
+
+    except Exception as e:
+        # Clean up on error
+        if "tmp_path" in locals() and tmp_path.exists():
+            tmp_path.unlink()
+
+        # Log and raise
+        logger.error(f"Failed to process health export: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to process health data: {str(e)}"
+        )
 
 
 # Mount A2A handler if base URL is configured

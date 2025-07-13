@@ -11,11 +11,11 @@ dependencies = [
     "structlog>=24.0.0",
     "openai>=1.91.0",
     "weave>=0.51.56",
-    "a2a-sdk[sqlite]>=0.2.11",
     "python-dotenv>=1.1.1",
     "crewai>=0.141.0",
     "crewai-tools>=0.51.1",
     "exa-py>=1.14.16",
+    "pandas>=2.3.1",
 ]
 
 [project.optional-dependencies]
