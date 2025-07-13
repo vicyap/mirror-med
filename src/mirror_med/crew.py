@@ -1,4 +1,3 @@
-import asyncio
 import json
 from typing import Any, Dict, Tuple
 
@@ -6,6 +5,12 @@ from crewai import LLM, Agent, Crew, Process, Task
 from crewai.task import TaskOutput
 
 from mirror_med.logging import get_logger
+
+# LLM Configuration Constants
+AGENT_LLM_MODEL = (
+    "openai/gpt-4.1-nano"  # OpenAI's latest and fastest model (released April 2025)
+)
+AGENT_LLM_TEMPERATURE = 0.5
 
 
 def validate_specialist_output(result: TaskOutput) -> Tuple[bool, Any]:
@@ -59,9 +64,11 @@ def flatten_patient_data(patient_data: Dict[str, Any]) -> Dict[str, Any]:
         "cholesterol_ldl": patient_data["measurements"]["ldl"],
         "triglycerides": patient_data["measurements"]["triglycerides"],
         # Health Forecast
+        "life_expectancy": patient_data["forecast"]["life_expectancy_years"],
         "cardiovascular_risk": patient_data["forecast"][
             "cardiovascular_event_10yr_probability"
         ],
+        "energy_level": patient_data["forecast"]["energy_level"],
         "dementia_risk": patient_data["forecast"]["dementia_risk"],
         "metabolic_risk": patient_data["forecast"]["metabolic_disease_risk"],
     }
@@ -71,9 +78,7 @@ def flatten_patient_data(patient_data: Dict[str, Any]) -> Dict[str, Any]:
 def create_pcp_manager_agent() -> Agent:
     """Create and return the PCP manager agent."""
     # Configure LLM for the agent
-    agent_llm = LLM(
-        model="openai/gpt-4.1-nano", temperature=0.4
-    )  # OpenAI's latest and fastest model (released April 2025)
+    agent_llm = LLM(model=AGENT_LLM_MODEL, temperature=AGENT_LLM_TEMPERATURE)
 
     # Primary Care Physician Manager
     return Agent(
@@ -93,15 +98,13 @@ def create_pcp_manager_agent() -> Agent:
 def create_compiler_agent() -> Agent:
     """Create and return the results compiler agent."""
     # Configure LLM for the agent
-    agent_llm = LLM(
-        model="openai/gpt-4.1-nano", temperature=0.4
-    )  # OpenAI's latest and fastest model (released April 2025)
+    agent_llm = LLM(model=AGENT_LLM_MODEL, temperature=AGENT_LLM_TEMPERATURE)
 
     # Results Compiler Agent
     return Agent(
         role="Health Assessment Compiler",
-        goal="Compile all health recommendations from specialists into a complete JSON response",
-        backstory="Medical data specialist who compiles health assessments into structured JSON reports.",
+        goal="Compile recommendations ensuring maximum positive impact on life expectancy, cardiovascular risk reduction, and energy optimization",
+        backstory="Health optimization specialist who ensures all recommendations synergistically improve the health forecast metrics.",
         tools=[],
         verbose=True,
         allow_delegation=False,
@@ -115,14 +118,12 @@ def create_compiler_agent() -> Agent:
 def create_alcohol_specialist_agent() -> Agent:
     """Create and return the alcohol consumption specialist agent."""
     # Configure LLM for the agent
-    agent_llm = LLM(
-        model="openai/gpt-4.1-nano", temperature=0.4
-    )  # OpenAI's latest and fastest model (released April 2025)
+    agent_llm = LLM(model=AGENT_LLM_MODEL, temperature=AGENT_LLM_TEMPERATURE)
 
     return Agent(
         role="Alcohol Consumption Specialist",
-        goal="Analyze patient alcohol consumption patterns and provide evidence-based recommendations for optimization",
-        backstory="Certified addiction counselor specializing in alcohol consumption patterns and harm reduction strategies.",
+        goal="Maximize life expectancy and minimize cardiovascular/dementia risk through evidence-based alcohol optimization strategies",
+        backstory="Longevity-focused addiction counselor specializing in reducing mortality risk through alcohol moderation to improve cardiovascular health and brain function.",
         tools=[],
         verbose=True,
         allow_delegation=False,
@@ -136,14 +137,12 @@ def create_alcohol_specialist_agent() -> Agent:
 def create_sleep_specialist_agent() -> Agent:
     """Create and return the sleep quality specialist agent."""
     # Configure LLM for the agent
-    agent_llm = LLM(
-        model="openai/gpt-4.1-nano", temperature=0.4
-    )  # OpenAI's latest and fastest model (released April 2025)
+    agent_llm = LLM(model=AGENT_LLM_MODEL, temperature=AGENT_LLM_TEMPERATURE)
 
     return Agent(
         role="Sleep Quality Specialist",
-        goal="Evaluate patient sleep patterns and provide evidence-based recommendations for sleep optimization",
-        backstory="Board-certified sleep medicine specialist with 12+ years experience in sleep optimization and behavioral interventions.",
+        goal="Dramatically improve energy levels and reduce metabolic/dementia risk through sleep optimization for maximum health forecast gains",
+        backstory="Sleep medicine specialist focused on longevity, using sleep as a powerful tool to reduce cardiovascular events, metabolic disease, and cognitive decline.",
         tools=[],
         verbose=True,
         allow_delegation=False,
@@ -157,14 +156,12 @@ def create_sleep_specialist_agent() -> Agent:
 def create_exercise_specialist_agent() -> Agent:
     """Create and return the exercise and physical activity specialist agent."""
     # Configure LLM for the agent
-    agent_llm = LLM(
-        model="openai/gpt-4.1-nano", temperature=0.4
-    )  # OpenAI's latest and fastest model (released April 2025)
+    agent_llm = LLM(model=AGENT_LLM_MODEL, temperature=AGENT_LLM_TEMPERATURE)
 
     return Agent(
         role="Exercise and Physical Activity Specialist",
-        goal="Assess patient exercise habits and provide personalized recommendations for physical activity optimization",
-        backstory="Certified exercise physiologist specializing in personalized fitness programs for various health conditions.",
+        goal="Design exercise programs that maximally reduce cardiovascular risk and increase life expectancy through evidence-based physical activity",
+        backstory="Exercise physiologist specializing in longevity protocols proven to reduce 10-year cardiovascular risk and extend healthy lifespan.",
         tools=[],
         verbose=True,
         allow_delegation=False,
@@ -178,20 +175,38 @@ def create_exercise_specialist_agent() -> Agent:
 def create_nutritionist_agent() -> Agent:
     """Create and return the clinical nutritionist agent."""
     # Configure LLM for the agent
-    agent_llm = LLM(
-        model="openai/gpt-4.1-nano", temperature=0.4
-    )  # OpenAI's latest and fastest model (released April 2025)
+    agent_llm = LLM(model=AGENT_LLM_MODEL, temperature=AGENT_LLM_TEMPERATURE)
 
     # Clinical Nutritionist
     return Agent(
         role="Nutritionist",
-        goal="Analyze patient data and provide evidence-based nutritional supplement recommendations",
-        backstory="Registered dietitian with 15+ years expertise in evidence-based supplementation and nutritional biochemistry.",
+        goal="Recommend targeted supplements to significantly improve cardiovascular markers, metabolic health, and cognitive protection for maximum life extension",
+        backstory="Longevity nutritionist using evidence-based supplementation to reduce disease risk and optimize biomarkers for extended healthspan.",
         tools=[],
         verbose=True,
         allow_delegation=False,
         max_rpm=None,
         max_iter=5,
+        cache=True,
+        llm=agent_llm,
+    )
+
+
+def create_single_pcp_agent() -> Agent:
+    """Create and return a single comprehensive PCP agent that handles all assessments."""
+    # Configure LLM for the agent
+    agent_llm = LLM(model=AGENT_LLM_MODEL, temperature=AGENT_LLM_TEMPERATURE)
+
+    # Comprehensive Primary Care Physician
+    return Agent(
+        role="Comprehensive Primary Care Physician",
+        goal="Provide complete health assessment including alcohol optimization, sleep improvement, exercise recommendations, and targeted supplement suggestions to maximize life expectancy and minimize disease risk",
+        backstory="Board-certified physician with 20+ years experience in preventive medicine, nutrition, sleep medicine, and exercise physiology. Expert at creating integrated health plans that synergistically improve all health metrics for maximum longevity gains.",
+        tools=[],
+        verbose=True,
+        allow_delegation=False,
+        max_rpm=None,
+        max_iter=10,
         cache=True,
         llm=agent_llm,
     )
@@ -339,13 +354,20 @@ def create_supplements_task(agent: Agent) -> Task:
     4. Explain the expected benefits based on the patient's health profile
     
     Focus on supplements that have strong scientific evidence for this patient's specific needs.
+    
+    CRITICAL: Prioritize supplements with strongest evidence for health forecast improvements:
+    - Life expectancy extension through targeted supplementation
+    - Cardiovascular protection (omega-3, CoQ10 if indicated)
+    - Metabolic support (vitamin D, magnesium)
+    - Cognitive protection (B-complex, antioxidants)
+    - Higher ratings (9-10) for supplements with proven longevity benefits
     """
 
     expected_output = """
     Provide 2-3 evidence-based supplement recommendations. For each:
     - Name, form, dosage (e.g., "Vitamin D3 2000 IU daily")
-    - Expected benefits for this patient
-    - Any important interactions or timing considerations
+    - Expected impact on specific health metrics (e.g., '15% cardiovascular risk reduction')
+    - Rating (1-10) based on magnitude of health improvements
     """
 
     return Task(
@@ -391,13 +413,20 @@ def create_alcohol_task(agent: Agent) -> Task:
     2. Address cardiovascular and dementia risk factors
     3. Suggest practical harm reduction strategies if needed
     4. Provide a rating (1-10) for the potential benefit of following your recommendations
+    
+    CRITICAL: Your recommendations should target maximum improvement in health forecast metrics:
+    - Life expectancy increase: Aim for +2-5 years through alcohol optimization
+    - Cardiovascular risk reduction: Target 20-40% reduction in 10-year probability
+    - Consider impact on dementia risk and energy levels
+    - Higher ratings (9-10) should indicate major health improvements
     """
 
     expected_output = """
     Provide alcohol consumption recommendations:
     - Specific recommendation with limits (e.g., drinks per week)
-    - Key health benefits of following this recommendation
-    - Rating (1-10) for potential health improvement
+    - Expected cardiovascular risk reduction (e.g., '25% reduction in 10-year risk')
+    - Expected life expectancy gain (e.g., '+3 years')
+    - Rating (1-10) based on magnitude of health improvements
     """
 
     return Task(
@@ -445,13 +474,21 @@ def create_sleep_task(agent: Agent) -> Task:
     3. Suggest sleep hygiene improvements
     4. Account for any medication effects on sleep
     5. Provide a rating (1-10) for the potential benefit of following your recommendations
+    
+    CRITICAL: Focus on sleep interventions that maximize health forecast improvements:
+    - Energy level: Transform from Low/Moderate to High
+    - Metabolic disease risk: Reduce from High to Low through better sleep
+    - Dementia risk: Significant reduction through sleep quality improvement
+    - Target 7-9 hours of quality sleep for optimal longevity
+    - Higher ratings (9-10) should indicate transformative improvements
     """
 
     expected_output = """
     Provide sleep optimization recommendations:
     - Specific sleep schedule and duration target
-    - Key sleep hygiene practices to implement
-    - Rating (1-10) for potential health improvement
+    - Expected energy level improvement (e.g., 'Moderate to High')
+    - Expected risk reductions (e.g., 'metabolic: 30%, dementia: 20%')
+    - Rating (1-10) based on magnitude of health improvements
     """
 
     return Task(
@@ -499,13 +536,21 @@ def create_exercise_task(agent: Agent) -> Task:
     3. Consider any physical limitations or medical conditions
     4. Balance cardio, strength, and flexibility training
     5. Provide a rating (1-10) for the potential benefit of following your recommendations
+    
+    CRITICAL: Design exercise program for maximum health forecast gains:
+    - Cardiovascular risk: Target 30-50% reduction in 10-year probability
+    - Life expectancy: Aim for +5-10 years through regular exercise
+    - Metabolic disease risk: Reduce to Low through fitness improvements
+    - Include both cardio (150min/week) and strength training for optimal results
+    - Higher ratings (9-10) should indicate life-changing improvements
     """
 
     expected_output = """
     Provide exercise recommendations:
     - Weekly exercise plan (days, duration, intensity)
-    - Specific activities recommended
-    - Rating (1-10) for potential health improvement
+    - Expected cardiovascular risk reduction (e.g., '40% reduction')
+    - Expected life expectancy gain (e.g., '+7 years')
+    - Rating (1-10) based on magnitude of health improvements
     """
 
     return Task(
@@ -515,6 +560,127 @@ def create_exercise_task(agent: Agent) -> Task:
         async_execution=True,  # Enable async execution
         guardrail=validate_specialist_output,
         max_retries=3,
+    )
+
+
+def create_single_pcp_task(agent: Agent) -> Task:
+    """
+    Create a comprehensive health assessment task for the single PCP agent.
+
+    Args:
+        agent: The single PCP agent to assign the task to
+
+    Returns:
+        Task: The configured comprehensive health assessment task
+    """
+    task_description = """
+    As a Comprehensive Primary Care Physician, provide a complete health assessment for this patient with the following data:
+    
+    PATIENT INFORMATION:
+    - Social History:
+      * Diet: {diet}
+      * Exercise: {exercise_description} (current rating: {exercise_rating}/10)
+      * Alcohol: {alcohol_description} (current rating: {alcohol_rating}/10)
+      * Sleep: {sleep_description} (current rating: {sleep_rating}/10)
+      * Occupation: {occupation}
+    
+    - Medical History: {medical_conditions}
+    - Current Medications: {medications}
+    - Allergies: {allergies}
+    - Family History: Father - {family_history_father}, Mother - {family_history_mother}
+    
+    - Vital Signs & Measurements:
+      * Weight: {weight} lbs, Height: {height} inches
+      * Blood Pressure: {blood_pressure}
+      * Cholesterol: Total {cholesterol_total}, HDL {cholesterol_hdl}, LDL {cholesterol_ldl}
+      * Triglycerides: {triglycerides}
+    
+    - Health Forecast:
+      * Life expectancy: {life_expectancy} years
+      * Cardiovascular risk (10-year): {cardiovascular_risk}
+      * Energy level: {energy_level}
+      * Dementia risk: {dementia_risk}
+      * Metabolic disease risk: {metabolic_risk}
+    
+    Provide comprehensive health improvement recommendations for ALL of the following areas:
+    
+    1. ALCOHOL CONSUMPTION:
+       - Analyze current intake and interactions with medications
+       - Provide specific limits targeting cardiovascular and dementia risk reduction
+       - Aim for life expectancy increase of +2-5 years
+       - Target 20-40% reduction in 10-year cardiovascular risk
+    
+    2. SLEEP QUALITY:
+       - Evaluate sleep patterns considering occupation and lifestyle
+       - Recommend specific sleep schedule and hygiene improvements
+       - Target energy level improvement from Low/Moderate to High
+       - Aim to reduce metabolic and dementia risk through better sleep
+    
+    3. EXERCISE ROUTINE:
+       - Build on current activity level progressively
+       - Balance cardio (150min/week) and strength training
+       - Target 30-50% cardiovascular risk reduction
+       - Aim for +5-10 years life expectancy gain
+    
+    4. NUTRITIONAL SUPPLEMENTS:
+       - Recommend 2-3 evidence-based supplements with specific dosages
+       - Consider drug-nutrient interactions with current medications
+       - Focus on cardiovascular protection (omega-3, CoQ10 if indicated)
+       - Include metabolic support (vitamin D, magnesium) and cognitive protection
+    
+    CRITICAL: Your recommendations must show substantial, realistic improvements:
+    - Life expectancy: Increase by 5-10 years from baseline
+    - Cardiovascular risk: Reduce by 30-50% from baseline
+    - Energy level: Improve to 'High' if currently Low/Moderate
+    - Metabolic disease risk: Reduce to 'Low' where possible
+    - Dementia risk: Reduce to 'Low' where possible
+    
+    Ensure all recommendations work synergistically for maximum health gains.
+    """
+
+    expected_output = """
+    IMPORTANT: Provide your response ONLY as valid JSON with no additional text or markdown formatting.
+    
+    Return a comprehensive health improvement plan with updated forecast in exactly this JSON format:
+    {
+        "recommendations": {
+            "alcohol": {
+                "description": "Specific recommendation for alcohol consumption",
+                "rating": <integer 1-10 indicating future benefit>
+            },
+            "sleep": {
+                "description": "Specific recommendation for sleep improvement", 
+                "rating": <integer 1-10 indicating future benefit>
+            },
+            "exercise": {
+                "description": "Specific recommendation for exercise routine",
+                "rating": <integer 1-10 indicating future benefit>
+            },
+            "supplements": [
+                {
+                    "description": "Specific supplement recommendation with dosage",
+                    "rating": <integer 1-10 indicating future benefit>
+                }
+            ]
+        },
+        "forecast": {
+            "life_expectancy_years": <float showing improved life expectancy>,
+            "cardiovascular_event_10yr_probability": <float between 0-1 showing reduced risk>,
+            "energy_level": <"Low", "Moderate", or "High">,
+            "metabolic_disease_risk": <"Low", "Moderate", or "High">,
+            "dementia_risk": <"Low", "Moderate", or "High">,
+            "last_updated": <current date as "YYYY-MM-DD">
+        }
+    }
+    
+    Ensure all ratings are integers between 1-10. Include at least 1 supplement recommendation.
+    The forecast should show optimistic, positive improvements based on following all recommendations.
+    """
+
+    return Task(
+        description=task_description,
+        expected_output=expected_output,
+        agent=agent,
     )
 
 
@@ -539,6 +705,17 @@ def create_compilation_task(agent: Agent) -> Task:
     
     Take all these recommendations and compile them into the required JSON format.
     Include an updated health forecast showing realistic improvements based on following all recommendations.
+    
+    CRITICAL: The updated health forecast must show substantial, realistic improvements:
+    - Life expectancy: Increase by 5-10 years from baseline
+    - Cardiovascular risk: Reduce by 30-50% from baseline
+    - Energy level: Improve to 'High' if currently Low/Moderate
+    - Metabolic disease risk: Reduce to 'Low' where possible
+    - Dementia risk: Reduce to 'Low' where possible
+    - Ensure all improvements are evidence-based and achievable
+
+    Ensure all ratings are integers between 1-10. Include at least 1 supplement recommendation.
+    The forecast should show optimistic, positive improvements based on following all recommendations.
     
     IMPORTANT: Your output must be ONLY the JSON response with no additional text or explanation.
     """
@@ -581,6 +758,29 @@ def create_compilation_task(agent: Agent) -> Task:
         description=task_description,
         expected_output=expected_output,
         agent=agent,
+    )
+
+
+def create_single_agent_crew() -> Crew:
+    """
+    Create a crew with a single comprehensive PCP agent.
+
+    Returns:
+        Crew: The configured single-agent crew
+    """
+    # Create the single comprehensive PCP agent
+    single_pcp = create_single_pcp_agent()
+
+    # Create the comprehensive task
+    comprehensive_task = create_single_pcp_task(single_pcp)
+
+    # Return crew with single agent and task
+    return Crew(
+        agents=[single_pcp],
+        tasks=[comprehensive_task],
+        process=Process.sequential,  # Sequential process (though only one task)
+        verbose=True,
+        max_rpm=None,
     )
 
 
@@ -637,12 +837,15 @@ def create_crew() -> Crew:
 
 async def run_patient_health_assessment_async(
     patient_data: Dict[str, Any],
+    mode: str = "single_agent",
+    # mode: str = "multi_agent",
 ) -> Dict[str, Any]:
     """
     Run the patient health assessment crew asynchronously.
 
     Args:
         patient_data: Patient data dictionary
+        mode: Execution mode - "multi_agent" (default) or "single_agent"
 
     Returns:
         Dict containing health recommendations
@@ -650,8 +853,13 @@ async def run_patient_health_assessment_async(
     # Get logger
     logger = get_logger(__name__)
 
-    # Create the crew
-    crew = create_crew()
+    # Create the crew based on mode
+    if mode == "single_agent":
+        logger.info("Using single agent mode")
+        crew = create_single_agent_crew()
+    else:
+        logger.info("Using multi-agent mode")
+        crew = create_crew()
 
     # Flatten patient data into inputs
     inputs = flatten_patient_data(patient_data)
@@ -687,19 +895,3 @@ async def run_patient_health_assessment_async(
     except Exception as e:
         logger.error("Error during async assessment", error=str(e))
         raise
-
-
-def run_patient_health_assessment(
-    patient_data: Dict[str, Any],
-) -> Dict[str, Any]:
-    """
-    Run the patient health assessment crew (synchronous wrapper).
-
-    Args:
-        patient_data: Patient data dictionary
-
-    Returns:
-        Dict containing health recommendations
-    """
-    # Run the async version using asyncio.run()
-    return asyncio.run(run_patient_health_assessment_async(patient_data))
