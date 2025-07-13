@@ -9,7 +9,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from mirror_med.crew import run_patient_health_assessment
+from mirror_med.crew import run_patient_health_assessment_async
 from mirror_med.healthkit_converter import process_health_export
 from mirror_med.logging import get_logger
 
@@ -190,10 +190,10 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
     timeout = 60
 
     try:
-        # Run the crew in a thread with timeout
-        logger.info("Running patient health assessment crew")
+        # Run the crew asynchronously with timeout
+        logger.info("Running async patient health assessment crew")
         crew_result = await asyncio.wait_for(
-            asyncio.to_thread(run_patient_health_assessment, visit_dict),
+            run_patient_health_assessment_async(visit_dict),
             timeout=timeout,
         )
 
@@ -206,23 +206,23 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
                 visit_dict["forecast"] = crew_result["forecast"]
             logger.info("Successfully generated crew recommendations and forecast")
         else:
-            # Fallback to stub if crew output is invalid
-            logger.warning("Crew returned invalid format, using stub data")
-            raise ValueError("Invalid crew output format")
+            # Invalid crew output format
+            logger.warning("Crew returned invalid format")
+            raise HTTPException(status_code=500, detail="Invalid crew output format")
 
     except asyncio.TimeoutError:
         logger.error(f"Crew execution timed out after {timeout} seconds")
-        # Use stub data
-        stub_data = _get_stub_recommendations_and_forecast()
-        visit_dict["recommendations"] = stub_data["recommendations"]
-        visit_dict["forecast"] = stub_data["forecast"]
+        raise HTTPException(
+            status_code=504, detail=f"Crew execution timed out after {timeout} seconds"
+        )
+
+    except HTTPException:
+        # Re-raise HTTPException as-is
+        raise
 
     except Exception as e:
         logger.error(f"Error running crew: {str(e)}")
-        # Use stub data on any error
-        stub_data = _get_stub_recommendations_and_forecast()
-        visit_dict["recommendations"] = stub_data["recommendations"]
-        visit_dict["forecast"] = stub_data["forecast"]
+        raise HTTPException(status_code=500, detail=f"Error running crew: {str(e)}")
 
     # Return complete output
     return VisitOutput(**visit_dict)
