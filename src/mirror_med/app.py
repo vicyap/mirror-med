@@ -197,9 +197,9 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
 
 
 # Mount A2A handler if base URL is configured
-if settings.a2a_base_url:
-    a2a_app = create_a2a_app(settings.a2a_base_url)
-    app.mount("/", a2a_app)
+# if settings.a2a_base_url:
+#     a2a_app = create_a2a_app(settings.a2a_base_url)
+#     app.mount("/", a2a_app)
 
 
 def main():
