@@ -208,7 +208,7 @@ async def health_check() -> HealthResponse:
     return HealthResponse(status="ok")
 
 
-@app.post("/visit", response_model=VisitOutput)
+@app.post("/visit", response_model=VisitOutput, include_in_schema=False)
 async def create_visit(visit_data: VisitInput) -> VisitOutput:
     visit_dict = visit_data.model_dump()
     stub_data = _get_stub_recommendations_and_forecast()
