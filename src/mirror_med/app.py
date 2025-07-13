@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Optional
 
+import weave
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -16,8 +17,6 @@ from mirror_med.logging import get_logger
 # Suppress deprecation warnings from third-party packages
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pydantic")
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="weave")
-
-import weave
 
 weave.init("stepandel-none/weave-hacks")
 

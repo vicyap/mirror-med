@@ -121,11 +121,14 @@ def create_alcohol_specialist_agent() -> Agent:
     # Configure LLM for the agent
     agent_llm = LLM(model=AGENT_LLM_MODEL, temperature=AGENT_LLM_TEMPERATURE)
 
+    # Initialize the EXA search tool for evidence-based research
+    exa_tool = EXASearchTool()
+
     return Agent(
         role="Alcohol Consumption Specialist",
-        goal="Maximize life expectancy and minimize cardiovascular/dementia risk through evidence-based alcohol optimization strategies",
-        backstory="Longevity-focused addiction counselor specializing in reducing mortality risk through alcohol moderation to improve cardiovascular health and brain function.",
-        tools=[],
+        goal="Maximize life expectancy and minimize cardiovascular/dementia risk through evidence-based alcohol REDUCTION strategies",
+        backstory="Longevity-focused addiction counselor specializing in reducing mortality risk by helping patients LOWER alcohol consumption to improve cardiovascular health and brain function.",
+        tools=[exa_tool],
         verbose=True,
         allow_delegation=False,
         max_rpm=None,
@@ -140,11 +143,14 @@ def create_sleep_specialist_agent() -> Agent:
     # Configure LLM for the agent
     agent_llm = LLM(model=AGENT_LLM_MODEL, temperature=AGENT_LLM_TEMPERATURE)
 
+    # Initialize the EXA search tool for evidence-based research
+    exa_tool = EXASearchTool()
+
     return Agent(
         role="Sleep Quality Specialist",
         goal="Dramatically improve energy levels and reduce metabolic/dementia risk through sleep optimization for maximum health forecast gains",
         backstory="Sleep medicine specialist focused on longevity, using sleep as a powerful tool to reduce cardiovascular events, metabolic disease, and cognitive decline.",
-        tools=[],
+        tools=[exa_tool],
         verbose=True,
         allow_delegation=False,
         max_rpm=None,
@@ -159,11 +165,14 @@ def create_exercise_specialist_agent() -> Agent:
     # Configure LLM for the agent
     agent_llm = LLM(model=AGENT_LLM_MODEL, temperature=AGENT_LLM_TEMPERATURE)
 
+    # Initialize the EXA search tool for evidence-based research
+    exa_tool = EXASearchTool()
+
     return Agent(
         role="Exercise and Physical Activity Specialist",
         goal="Design exercise programs that maximally reduce cardiovascular risk and increase life expectancy through evidence-based physical activity",
         backstory="Exercise physiologist specializing in longevity protocols proven to reduce 10-year cardiovascular risk and extend healthy lifespan.",
-        tools=[],
+        tools=[exa_tool],
         verbose=True,
         allow_delegation=False,
         max_rpm=None,
@@ -178,12 +187,15 @@ def create_nutritionist_agent() -> Agent:
     # Configure LLM for the agent
     agent_llm = LLM(model=AGENT_LLM_MODEL, temperature=AGENT_LLM_TEMPERATURE)
 
+    # Initialize the EXA search tool for evidence-based research
+    exa_tool = EXASearchTool()
+
     # Clinical Nutritionist
     return Agent(
         role="Nutritionist",
         goal="Recommend targeted supplements to significantly improve cardiovascular markers, metabolic health, and cognitive protection for maximum life extension",
         backstory="Longevity nutritionist using evidence-based supplementation to reduce disease risk and optimize biomarkers for extended healthspan.",
-        tools=[],
+        tools=[exa_tool],
         verbose=True,
         allow_delegation=False,
         max_rpm=None,
@@ -256,7 +268,7 @@ def create_health_assessment_task(agent: Agent) -> Task:
     
     You need to coordinate the team to provide comprehensive health improvement recommendations for:
     
-    1. Alcohol consumption - Evaluate current intake and provide optimization recommendations
+    1. Alcohol consumption - Evaluate current intake and provide recommendations to REDUCE consumption for health benefits
     2. Sleep patterns - Analyze sleep quality/duration and suggest improvements
     3. Exercise routine - Evaluate current activity and recommend enhancements
     4. Nutritional supplements - IMPORTANT: You MUST delegate this to the 'nutritionist' 
@@ -281,8 +293,8 @@ def create_health_assessment_task(agent: Agent) -> Task:
     {
         "recommendations": {
             "alcohol": {
-                "description": "Specific recommendation for alcohol consumption",
-                "rating": <integer 1-10 indicating future benefit>
+                "description": "Specific recommendation to reduce alcohol consumption",
+                "rating": <integer 1-10 indicating health benefit of following this recommendation>
             },
             "sleep": {
                 "description": "Specific recommendation for sleep improvement", 
@@ -331,6 +343,11 @@ def create_supplements_task(agent: Agent) -> Task:
         Task: The configured supplements task
     """
     task_description = """
+    ⚠️ MANDATORY TOOL USAGE REQUIREMENT ⚠️
+    You MUST use the EXA search tool for ALL supplement recommendations. General knowledge is NOT acceptable.
+    ❌ DO NOT provide any recommendation without first searching for current evidence
+    ✅ Search for: "heart disease supplements evidence", "vitamin D cardiovascular benefits 2024", etc.
+    
     As the Clinical Nutritionist, analyze the patient data and provide evidence-based nutritional supplement 
     recommendations based on:
     
@@ -351,13 +368,29 @@ def create_supplements_task(agent: Agent) -> Task:
       * Dementia risk: {dementia_risk}
       * Metabolic disease risk: {metabolic_risk}
     
-    Provide specific, evidence-based supplement recommendations that:
-    1. Address the patient's health conditions and risk factors
-    2. Consider potential drug-nutrient interactions with current medications
-    3. Include specific dosages, forms, and timing
-    4. Explain the expected benefits based on the patient's health profile
+    📝 SEARCH PROCESS:
+    1. Search EXA for supplements proven effective for this patient's conditions
+    2. Search for specific dosing and safety data
+    3. Extract URLs from your search results
+    4. Base ALL recommendations on evidence found
     
-    Focus on supplements that have strong scientific evidence for this patient's specific needs.
+    ⚠️ CRITICAL OUTPUT FORMAT REQUIREMENT ⚠️
+    Your supplement descriptions MUST be:
+    - MAXIMUM 80 characters per recommendation
+    - Simple format: "Supplement name dosage frequency"
+    - NO explanations, NO justifications, NO context
+    
+    ✅ GOOD Examples (under 80 chars):
+    - "Omega-3 1000mg daily"
+    - "Vitamin D3 2000 IU daily" 
+    - "Magnesium glycinate 400mg at bedtime"
+    - "CoQ10 100mg twice daily"
+    
+    ❌ BAD Examples (too long/detailed):
+    - "High-quality omega-3 fatty acids 1000mg daily for cardiovascular protection"
+    - "Vitamin D3 2000 IU daily to improve immune function and bone health"
+    
+    CHARACTER COUNT REMINDER: Each description MUST be under 80 characters!
     
     CRITICAL: Prioritize supplements with strongest evidence for health forecast improvements:
     - Life expectancy extension through targeted supplementation
@@ -368,10 +401,26 @@ def create_supplements_task(agent: Agent) -> Task:
     """
 
     expected_output = """
-    Provide 2-3 evidence-based supplement recommendations. For each:
-    - Name, form, dosage (e.g., "Vitamin D3 2000 IU daily")
-    - Expected impact on specific health metrics (e.g., '15% cardiovascular risk reduction')
-    - Rating (1-10) based on magnitude of health improvements
+    IMPORTANT: Provide your response ONLY as valid JSON with no additional text or markdown formatting.
+    
+    Return your recommendations in exactly this JSON format:
+    {
+        "evidence_urls": ["https://url1.com", "https://url2.com", "https://url3.com"],
+        "recommendations": [
+            {
+                "description": "Omega-3 1000mg daily",
+                "rating": <integer 1-10 indicating future benefit>,
+                "evidence_based": true
+            },
+            {
+                "description": "Vitamin D3 2000 IU daily",
+                "rating": <integer 1-10 indicating future benefit>,
+                "evidence_based": true
+            }
+        ]
+    }
+    
+    FINAL REMINDER: Each description MUST be under 80 characters!
     """
 
     return Task(
@@ -395,11 +444,16 @@ def create_alcohol_task(agent: Agent) -> Task:
         Task: The configured alcohol assessment task
     """
     task_description = """
+    ⚠️ MANDATORY TOOL USAGE REQUIREMENT ⚠️
+    You MUST use the EXA search tool for your recommendation. General knowledge is NOT acceptable.
+    ❌ DO NOT provide any recommendation without first searching for current evidence
+    ✅ ALWAYS search for alcohol consumption guidelines based on patient specifics
+    
     As the Alcohol Consumption Specialist, analyze the patient's alcohol consumption patterns and provide 
     evidence-based recommendations based on:
     
     PATIENT INFORMATION:
-    - Current Alcohol Consumption: {alcohol_description} (current rating: {alcohol_rating}/10)
+    - Current Alcohol Consumption: {alcohol_description} (current rating: {alcohol_rating}/10 - Note: Higher rating = worse for health)
     - Medical History: {medical_conditions}
     - Current Medications: {medications}
     - Family History: Father - {family_history_father}, Mother - {family_history_mother}
@@ -412,25 +466,44 @@ def create_alcohol_task(agent: Agent) -> Task:
       * Cardiovascular risk (10-year): {cardiovascular_risk}
       * Dementia risk: {dementia_risk}
     
-    Provide specific recommendations that:
-    1. Consider interactions with current medications
-    2. Address cardiovascular and dementia risk factors
-    3. Suggest practical harm reduction strategies if needed
-    4. Provide a rating (1-10) for the potential benefit of following your recommendations
+    ⚠️ CRITICAL OUTPUT FORMAT REQUIREMENT ⚠️
+    Your final recommendation description MUST be:
+    - MAXIMUM 80 characters
+    - Simple, actionable statement only
+    - NO explanations, NO justifications, NO context
+    
+    ❌ BAD: "Reduce alcohol intake to no more than 1 pint of craft beer on Saturdays, aiming for weekly limit"
+    ✅ GOOD: "Limit to 1 drink per week"
+    
+    📋 SEARCH PROTOCOL:
+    Use EXA tool to search for current alcohol guidelines considering:
+    * Patient's cardiovascular risk and medications
+    * Latest 2024-2025 alcohol consumption evidence
+    * Example search: "alcohol limits cardiovascular disease hypertension 2025"
+    
+    ⚠️ CRITICAL: Extract and save the URLs from your search results!
     
     CRITICAL: Your recommendations should target maximum improvement in health forecast metrics:
-    - Life expectancy increase: Aim for +2-5 years through alcohol optimization
-    - Cardiovascular risk reduction: Target 20-40% reduction in 10-year probability
+    - Life expectancy increase: Aim for +2-5 years through alcohol REDUCTION
+    - Cardiovascular risk reduction: Target 20-40% reduction by LOWERING alcohol intake
     - Consider impact on dementia risk and energy levels
-    - Higher ratings (9-10) should indicate major health improvements
+    - Higher benefit ratings (9-10) for recommendations that significantly REDUCE alcohol consumption
     """
 
     expected_output = """
-    Provide alcohol consumption recommendations:
-    - Specific recommendation with limits (e.g., drinks per week)
-    - Expected cardiovascular risk reduction (e.g., '25% reduction in 10-year risk')
-    - Expected life expectancy gain (e.g., '+3 years')
-    - Rating (1-10) based on magnitude of health improvements
+    IMPORTANT: Provide your response ONLY as valid JSON with no additional text or markdown formatting.
+    
+    Return your recommendation in exactly this JSON format:
+    {
+        "evidence_urls": ["https://url1.com", "https://url2.com"],
+        "recommendation": {
+            "description": "Limit to 1 drink per week",
+            "rating": <integer 1-10 indicating future benefit>,
+            "evidence_based": true
+        }
+    }
+    
+    FINAL REMINDER: The description MUST be under 80 characters!
     """
 
     return Task(
@@ -454,6 +527,11 @@ def create_sleep_task(agent: Agent) -> Task:
         Task: The configured sleep assessment task
     """
     task_description = """
+    ⚠️ MANDATORY TOOL USAGE REQUIREMENT ⚠️
+    You MUST use the EXA search tool for your recommendation. General knowledge is NOT acceptable.
+    ❌ DO NOT provide any recommendation without first searching for current evidence
+    ✅ ALWAYS search for sleep optimization evidence based on patient specifics
+    
     As the Sleep Quality Specialist, evaluate the patient's sleep patterns and provide 
     evidence-based recommendations based on:
     
@@ -472,12 +550,22 @@ def create_sleep_task(agent: Agent) -> Task:
       * Metabolic disease risk: {metabolic_risk}
       * Dementia risk: {dementia_risk}
     
-    Provide specific recommendations that:
-    1. Address sleep quality and duration issues
-    2. Consider work schedule and lifestyle factors
-    3. Suggest sleep hygiene improvements
-    4. Account for any medication effects on sleep
-    5. Provide a rating (1-10) for the potential benefit of following your recommendations
+    ⚠️ CRITICAL OUTPUT FORMAT REQUIREMENT ⚠️
+    Your final recommendation description MUST be:
+    - MAXIMUM 80 characters
+    - Simple, actionable statement only
+    - NO explanations, NO justifications, NO context
+    
+    ❌ BAD: "Increase sleep duration to 7-8 hours per night and establish consistent sleep schedule"
+    ✅ GOOD: "Sleep 7-8 hours nightly"
+    
+    📋 SEARCH PROTOCOL:
+    Use EXA tool to search for evidence-based sleep optimization:
+    * Patient's metabolic and dementia risk factors
+    * Latest 2024-2025 sleep research
+    * Example search: "sleep optimization metabolic syndrome evidence 2024"
+    
+    ⚠️ CRITICAL: Extract and save the URLs from your search results!
     
     CRITICAL: Focus on sleep interventions that maximize health forecast improvements:
     - Energy level: Transform from Low/Moderate to High
@@ -488,11 +576,19 @@ def create_sleep_task(agent: Agent) -> Task:
     """
 
     expected_output = """
-    Provide sleep optimization recommendations:
-    - Specific sleep schedule and duration target
-    - Expected energy level improvement (e.g., 'Moderate to High')
-    - Expected risk reductions (e.g., 'metabolic: 30%, dementia: 20%')
-    - Rating (1-10) based on magnitude of health improvements
+    IMPORTANT: Provide your response ONLY as valid JSON with no additional text or markdown formatting.
+    
+    Return your recommendation in exactly this JSON format:
+    {
+        "evidence_urls": ["https://url1.com", "https://url2.com"],
+        "recommendation": {
+            "description": "Sleep 7-8 hours nightly",
+            "rating": <integer 1-10 indicating future benefit>,
+            "evidence_based": true
+        }
+    }
+    
+    FINAL REMINDER: The description MUST be under 80 characters!
     """
 
     return Task(
@@ -516,6 +612,11 @@ def create_exercise_task(agent: Agent) -> Task:
         Task: The configured exercise assessment task
     """
     task_description = """
+    ⚠️ MANDATORY TOOL USAGE REQUIREMENT ⚠️
+    You MUST use the EXA search tool for your recommendation. General knowledge is NOT acceptable.
+    ❌ DO NOT provide any recommendation without first searching for current evidence
+    ✅ ALWAYS search for exercise recommendations based on patient specifics
+    
     As the Exercise and Physical Activity Specialist, assess the patient's exercise habits and provide 
     personalized recommendations based on:
     
@@ -534,12 +635,22 @@ def create_exercise_task(agent: Agent) -> Task:
       * Cardiovascular risk (10-year): {cardiovascular_risk}
       * Metabolic disease risk: {metabolic_risk}
     
-    Provide specific recommendations that:
-    1. Build on current activity level progressively
-    2. Address cardiovascular and metabolic risk factors
-    3. Consider any physical limitations or medical conditions
-    4. Balance cardio, strength, and flexibility training
-    5. Provide a rating (1-10) for the potential benefit of following your recommendations
+    ⚠️ CRITICAL OUTPUT FORMAT REQUIREMENT ⚠️
+    Your final recommendation description MUST be:
+    - MAXIMUM 80 characters
+    - Simple, actionable statement only
+    - NO explanations, NO justifications, NO context
+    
+    ❌ BAD: "Engage in 150 minutes of moderate cardio weekly plus strength training twice per week"
+    ✅ GOOD: "150 min cardio + 2x strength training weekly"
+    
+    📋 SEARCH PROTOCOL:
+    Use EXA tool to search for evidence-based exercise recommendations:
+    * Patient's cardiovascular and metabolic risk factors
+    * Latest 2024-2025 exercise research
+    * Example search: "HIIT strength training cardiovascular risk reduction 2025"
+    
+    ⚠️ CRITICAL: Extract and save the URLs from your search results!
     
     CRITICAL: Design exercise program for maximum health forecast gains:
     - Cardiovascular risk: Target 30-50% reduction in 10-year probability
@@ -550,11 +661,19 @@ def create_exercise_task(agent: Agent) -> Task:
     """
 
     expected_output = """
-    Provide exercise recommendations:
-    - Weekly exercise plan (days, duration, intensity)
-    - Expected cardiovascular risk reduction (e.g., '40% reduction')
-    - Expected life expectancy gain (e.g., '+7 years')
-    - Rating (1-10) based on magnitude of health improvements
+    IMPORTANT: Provide your response ONLY as valid JSON with no additional text or markdown formatting.
+    
+    Return your recommendation in exactly this JSON format:
+    {
+        "evidence_urls": ["https://url1.com", "https://url2.com"],
+        "recommendation": {
+            "description": "150 min cardio + 2x strength training weekly",
+            "rating": <integer 1-10 indicating future benefit>,
+            "evidence_based": true
+        }
+    }
+    
+    FINAL REMINDER: The description MUST be under 80 characters!
     """
 
     return Task(
@@ -591,7 +710,7 @@ def create_single_pcp_task(agent: Agent) -> Task:
     - Social History:
       * Diet: {diet}
       * Exercise: {exercise_description} (current rating: {exercise_rating}/10)
-      * Alcohol: {alcohol_description} (current rating: {alcohol_rating}/10)
+      * Alcohol: {alcohol_description} (current rating: {alcohol_rating}/10 - Note: Higher rating = worse for health)
       * Sleep: {sleep_description} (current rating: {sleep_rating}/10)
       * Occupation: {occupation}
     
@@ -629,9 +748,9 @@ def create_single_pcp_task(agent: Agent) -> Task:
 
     1. ALCOHOL CONSUMPTION:
        - Analyze current intake and interactions with medications
-       - Provide specific limits targeting cardiovascular and dementia risk reduction
-       - Aim for life expectancy increase of +2-5 years
-       - Target 20-40% reduction in 10-year cardiovascular risk
+       - Provide specific limits to REDUCE consumption for cardiovascular and dementia risk reduction
+       - Aim for life expectancy increase of +2-5 years by LOWERING alcohol intake
+       - Target 20-40% reduction in 10-year cardiovascular risk through alcohol REDUCTION
     
     2. SLEEP QUALITY:
        - Evaluate sleep patterns considering occupation and lifestyle
@@ -701,7 +820,7 @@ def create_single_pcp_task(agent: Agent) -> Task:
         "recommendations": {
             "alcohol": {
                 "description": "Limit to 1 drink per week",
-                "rating": <integer 1-10 indicating future benefit>,
+                "rating": <integer 1-10 indicating health benefit of following this recommendation>,
                 "evidence_based": true
             },
             "sleep": {
@@ -761,24 +880,42 @@ def create_compilation_task(agent: Agent) -> Task:
     task_description = """
     Compile all the health recommendations that have been provided by the specialist agents into a final JSON response.
     
-    You should have received recommendations from:
-    1. Alcohol Consumption Specialist - alcohol optimization recommendations
-    2. Sleep Quality Specialist - sleep improvement recommendations
-    3. Exercise Specialist - physical activity recommendations
-    4. Nutritionist - nutritional supplement recommendations
+    You should have received JSON responses from:
+    1. Alcohol Consumption Specialist - JSON with evidence_urls and recommendation
+    2. Sleep Quality Specialist - JSON with evidence_urls and recommendation
+    3. Exercise Specialist - JSON with evidence_urls and recommendation
+    4. Nutritionist - JSON with evidence_urls and recommendations array
     
-    Take all these recommendations and compile them into the required JSON format.
-    Include an updated health forecast showing realistic improvements based on following all recommendations.
+    IMPORTANT: Each specialist provided their output in JSON format with:
+    - evidence_urls: Array of URLs from their EXA searches
+    - recommendation/recommendations: Their specific recommendations with descriptions, ratings, and evidence_based flags
     
-    CRITICAL: The updated health forecast must show substantial, realistic improvements:
-    - Life expectancy: Increase by 5-10 years from baseline
-    - Cardiovascular risk: Reduce by 30-50% from baseline
-    - Energy level: Improve to 'High' if currently Low/Moderate
-    - Metabolic disease risk: Reduce to 'Low' where possible
-    - Dementia risk: Reduce to 'Low' where possible
+    BASELINE HEALTH METRICS (current patient status):
+    - Current life expectancy: {life_expectancy} years
+    - Current cardiovascular risk (10-year): {cardiovascular_risk}
+    - Current energy level: {energy_level}
+    - Current dementia risk: {dementia_risk}
+    - Current metabolic disease risk: {metabolic_risk}
+    
+    Your task is to:
+    1. Parse each specialist's JSON response
+    2. Extract the evidence URLs from each specialist
+    3. Extract the recommendations from each specialist
+    4. Compile everything into the final format below
+    5. Add an updated health forecast based on the baseline metrics above
+    
+    ⚠️ CRITICAL: Preserve the exact recommendation descriptions from specialists!
+    They have already been formatted to be under 80 characters. DO NOT modify them.
+    
+    CRITICAL: The updated health forecast must show substantial, realistic improvements from the BASELINE values:
+    - Life expectancy: Increase by 5-10 years from baseline {life_expectancy}
+    - Cardiovascular risk: Reduce by 30-50% from baseline {cardiovascular_risk}
+    - Energy level: Improve to 'High' if currently {energy_level}
+    - Metabolic disease risk: Reduce to 'Low' if currently {metabolic_risk}
+    - Dementia risk: Reduce to 'Low' if currently {dementia_risk}
     - Ensure all improvements are evidence-based and achievable
 
-    Ensure all ratings are integers between 1-10. Include at least 1 supplement recommendation.
+    Ensure all ratings are integers between 1-10. Include all supplement recommendations from the nutritionist.
     The forecast should show optimistic, positive improvements based on following all recommendations.
     
     IMPORTANT: Your output must be ONLY the JSON response with no additional text or explanation.
@@ -787,23 +924,33 @@ def create_compilation_task(agent: Agent) -> Task:
     expected_output = """
     Return ONLY this JSON structure with no additional text:
     {
+        "evidence_urls": {
+            "alcohol": [<URLs from alcohol specialist>],
+            "sleep": [<URLs from sleep specialist>],
+            "exercise": [<URLs from exercise specialist>],
+            "supplements": [<URLs from nutritionist>]
+        },
         "recommendations": {
             "alcohol": {
-                "description": "Specific recommendation for alcohol consumption",
-                "rating": <integer 1-10 indicating future benefit>
+                "description": <exact description from alcohol specialist>,
+                "rating": <rating from alcohol specialist>,
+                "evidence_based": true
             },
             "sleep": {
-                "description": "Specific recommendation for sleep improvement", 
-                "rating": <integer 1-10 indicating future benefit>
+                "description": <exact description from sleep specialist>, 
+                "rating": <rating from sleep specialist>,
+                "evidence_based": true
             },
             "exercise": {
-                "description": "Specific recommendation for exercise routine",
-                "rating": <integer 1-10 indicating future benefit>
+                "description": <exact description from exercise specialist>,
+                "rating": <rating from exercise specialist>,
+                "evidence_based": true
             },
             "supplements": [
                 {
-                    "description": "Specific supplement recommendation with dosage",
-                    "rating": <integer 1-10 indicating future benefit>
+                    "description": <exact description from nutritionist>,
+                    "rating": <rating from nutritionist>,
+                    "evidence_based": true
                 }
             ]
         },
@@ -917,22 +1064,17 @@ async def run_patient_health_assessment_async(
     # Get logger
     logger = get_logger(__name__)
 
-    # Create the crew based on mode
-    if mode == "single_agent":
-        logger.info("Using single agent mode")
-        crew = create_single_agent_crew()
-    else:
-        logger.info("Using multi-agent mode")
-        crew = create_crew()
-
     # Flatten patient data into inputs
     inputs = flatten_patient_data(patient_data)
 
-    try:
-        logger.info("Starting async patient health assessment")
-        # Use kickoff_async for non-blocking execution
-        result = await crew.kickoff_async(inputs)
+    logger.info("Using multi-agent mode")
+    crew = create_crew()
+    result = await crew.kickoff_async(inputs)
 
+    crew = create_single_agent_crew()
+
+    try:
+        result = await crew.kickoff_async(inputs)
         # Try to parse the result as JSON
         try:
             # Extract JSON from the result if it's embedded in text
