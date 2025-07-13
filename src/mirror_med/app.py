@@ -3,21 +3,18 @@ import warnings
 from contextlib import asynccontextmanager
 from typing import Any
 
-import weave
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from mirror_med.a2a.agent_config import create_a2a_app
 from mirror_med.crews import run_patient_health_assessment
 from mirror_med.logging import get_logger
-from mirror_med.settings import get_settings
 
 # Suppress deprecation warnings from third-party packages
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pydantic")
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="weave")
 
-weave.init("stepandel-none/hack-jul12")
+# weave.init("stepandel-none/hack-jul12")
 
 
 logger = get_logger(__name__)
@@ -108,19 +105,31 @@ class VisitOutput(VisitInput):
     recommendations: Recommendations
 
 
-def _get_stub_recommendations() -> dict:
-    """Return stub recommendations as fallback."""
+def _get_stub_recommendations_and_forecast() -> dict:
+    """Return stub recommendations and forecast as fallback."""
+    from datetime import date
+
     return {
-        "alcohol": {"description": "Limit to 1 drink per day", "rating": 8},
-        "sleep": {"description": "Aim for 7-8 hours nightly", "rating": 9},
-        "exercise": {
-            "description": "30 minutes of moderate activity, 5 days/week",
-            "rating": 8,
+        "recommendations": {
+            "alcohol": {"description": "Limit to 1 drink per day", "rating": 8},
+            "sleep": {"description": "Aim for 7-8 hours nightly", "rating": 9},
+            "exercise": {
+                "description": "30 minutes of moderate activity, 5 days/week",
+                "rating": 8,
+            },
+            "supplements": [
+                {"description": "Take 2000 IU Vitamin D3 daily", "rating": 9},
+                {"description": "Consider 1000 mg Omega-3 daily", "rating": 7},
+            ],
         },
-        "supplements": [
-            {"description": "Take 2000 IU Vitamin D3 daily", "rating": 9},
-            {"description": "Consider 1000 mg Omega-3 daily", "rating": 7},
-        ],
+        "forecast": {
+            "life_expectancy_years": 89.0,
+            "cardiovascular_event_10yr_probability": 0.06,
+            "energy_level": "High",
+            "metabolic_disease_risk": "Low",
+            "dementia_risk": "Low",
+            "last_updated": str(date.today()),
+        },
     }
 
 
@@ -164,7 +173,8 @@ async def health_check() -> HealthResponse:
 @app.post("/visit", response_model=VisitOutput)
 async def create_visit(visit_data: VisitInput) -> VisitOutput:
     visit_dict = visit_data.model_dump()
-    visit_dict["recommendations"] = _get_stub_recommendations()
+    stub_data = _get_stub_recommendations_and_forecast()
+    visit_dict["recommendations"] = stub_data["recommendations"]
     return VisitOutput(**visit_dict)
 
 
@@ -182,8 +192,12 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
 
         # If crew returned valid recommendations
         if isinstance(crew_result, dict) and "raw_output" not in crew_result:
-            visit_dict["recommendations"] = crew_result
-            logger.info("Successfully generated crew recommendations")
+            # Extract recommendations and forecast separately
+            if "recommendations" in crew_result:
+                visit_dict["recommendations"] = crew_result["recommendations"]
+            if "forecast" in crew_result:
+                visit_dict["forecast"] = crew_result["forecast"]
+            logger.info("Successfully generated crew recommendations and forecast")
         else:
             # Fallback to stub if crew output is invalid
             logger.warning("Crew returned invalid format, using stub data")
@@ -192,12 +206,16 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
     except asyncio.TimeoutError:
         logger.error("Crew execution timed out after 300 seconds")
         # Use stub data
-        visit_dict["recommendations"] = _get_stub_recommendations()
+        stub_data = _get_stub_recommendations_and_forecast()
+        visit_dict["recommendations"] = stub_data["recommendations"]
+        visit_dict["forecast"] = stub_data["forecast"]
 
     except Exception as e:
         logger.error(f"Error running crew: {str(e)}")
         # Use stub data on any error
-        visit_dict["recommendations"] = _get_stub_recommendations()
+        stub_data = _get_stub_recommendations_and_forecast()
+        visit_dict["recommendations"] = stub_data["recommendations"]
+        visit_dict["forecast"] = stub_data["forecast"]
 
     # Return complete output
     return VisitOutput(**visit_dict)

@@ -1,57 +1,4 @@
 {
-  "social_history": {
-    "food": "Mostly pescatarian; tracks macros with an app",
-    "exercise": {
-      "description": "Runs 3–4 mi, 5×/week",
-      "rating": 8
-    },
-    "drugs": "No recreational use",
-    "tobacco": "Never",
-    "alcohol": {
-      "description": "Craft beer on Saturdays (2 pints)",
-      "rating": 6
-    },
-    "sleep": {
-      "description": "6–7 hours/night",
-      "rating": 8
-    },
-    "occupation": "Mechanical engineer, hybrid office/field",
-    "sexual_history": "Married, monogamous; last STI screen 2023-11"
-  },
-  "medical_history": {
-    "conditions": ["Mild psoriasis"],
-    "immunizations": ["Tdap 2021", "COVID-19 bivalent 2024-02"],
-    "health_maintenance": { "last_eye_exam": "2024-05" }
-  },
-  "allergies": [{ "allergen": "Sulfa antibiotics", "reaction": "Rash" }],
-  "surgical_history": [
-    { "procedure": "Right ACL reconstruction", "year": 2016 }
-  ],
-
-  "hospitalizations": [
-    { "reason": "Appendicitis", "location": "Mayo Clinic", "year": 2008 }
-  ],
-  "family_history": {
-    "mother": ["Hypothyroidism"],
-    "father": ["Myocardial infarction at 62"],
-    "siblings": []
-  },
-  "medications": [
-    {
-      "name": "Topical clobetasol",
-      "dose": "Apply BID",
-      "frequency": "PRN flares"
-    },
-    { "name": "Vitamin D3", "dose": "2000 IU", "frequency": "Daily" }
-  ],
-  "pcp": {
-    "name": "Dr Samantha Blake, MD",
-    "clinic": "Green Valley Family Medicine",
-    "address": "1234 Sunrise Blvd, Suite 200, Phoenix, AZ 85004, USA",
-    "phone": "+1-602-555-0199",
-    "email": "sblake@gvfm.example",
-    "last_visit": "2024-05-15"
-  },
   "forecast": {
     "life_expectancy_years": 88.2,
     "cardiovascular_event_10yr_probability": 0.08,
@@ -60,17 +7,6 @@
     "dementia_risk": "Moderate",
     "last_updated": "2025-07-12"
   },
-  "measurements": {
-    "weight": 180,
-    "height": 72,
-    "blood_pressure": 120,
-    "blood_sugar": 100,
-    "cholesterol": 200,
-    "hdl": 60,
-    "ldl": 100,
-    "triglycerides": 150
-  },
-
   "recommendations": {
     "alcohol": {
       "description": "Limit to 1 pint on Saturdays",

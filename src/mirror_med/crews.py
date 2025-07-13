@@ -1,168 +1,150 @@
-"""
-Patient Health Assessment Crew
-==============================
-
-This module implements a hierarchical CrewAI crew that acts as a digital twin
-for patient health assessments. The crew simulates a visit to a primary care
-physician (PCP) who coordinates with various specialists to create a
-comprehensive health improvement plan.
-
-The crew uses a hierarchical process where the PCP acts as the manager,
-delegating specific assessments to nutrition, sleep, and exercise specialists.
-"""
-
 import json
 from typing import Any, Dict
 
 from crewai import LLM, Agent, Crew, Process, Task
-from crewai_tools import EXASearchTool
 
 from mirror_med.logging import get_logger
 
 
-class PatientHealthCrew:
+def flatten_patient_data(patient_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Flatten nested patient data into a flat dictionary for crew inputs.
+
+    Args:
+        patient_data: Nested patient data dictionary
+
+    Returns:
+        Flattened dictionary suitable for crew.kickoff(inputs)
     """
-    A hierarchical crew that simulates a patient's visit to a PCP
-    for a comprehensive health assessment and improvement plan.
+    inputs = {
+        # Social History
+        "diet": patient_data["social_history"]["food"],
+        "exercise_description": patient_data["social_history"]["exercise"][
+            "description"
+        ],
+        "exercise_rating": patient_data["social_history"]["exercise"]["rating"],
+        "alcohol_description": patient_data["social_history"]["alcohol"]["description"],
+        "alcohol_rating": patient_data["social_history"]["alcohol"]["rating"],
+        "sleep_description": patient_data["social_history"]["sleep"]["description"],
+        "sleep_rating": patient_data["social_history"]["sleep"]["rating"],
+        "occupation": patient_data["social_history"]["occupation"],
+        # Medical History
+        "medical_conditions": ", ".join(patient_data["medical_history"]["conditions"]),
+        # Medications
+        "medications": ", ".join(
+            [f"{med['name']} {med['dose']}" for med in patient_data["medications"]]
+        ),
+        # Allergies
+        "allergies": ", ".join(
+            [
+                f"{allergy['allergen']} ({allergy['reaction']})"
+                for allergy in patient_data["allergies"]
+            ]
+        ),
+        # Family History
+        "family_history_father": ", ".join(patient_data["family_history"]["father"]),
+        "family_history_mother": ", ".join(patient_data["family_history"]["mother"]),
+        # Measurements
+        "weight": patient_data["measurements"]["weight"],
+        "height": patient_data["measurements"]["height"],
+        "blood_pressure": patient_data["measurements"]["blood_pressure"],
+        "cholesterol_total": patient_data["measurements"]["cholesterol"],
+        "cholesterol_hdl": patient_data["measurements"]["hdl"],
+        "cholesterol_ldl": patient_data["measurements"]["ldl"],
+        "triglycerides": patient_data["measurements"]["triglycerides"],
+        # Health Forecast
+        "cardiovascular_risk": patient_data["forecast"][
+            "cardiovascular_event_10yr_probability"
+        ],
+        "dementia_risk": patient_data["forecast"]["dementia_risk"],
+        "metabolic_risk": patient_data["forecast"]["metabolic_disease_risk"],
+    }
+    return inputs
+
+
+def _create_pcp_agent() -> Agent:
+    """Create and return the PCP agent."""
+    # Configure LLM for the agent
+    agent_llm = LLM(model="openai/gpt-4.1-nano")
+
+    # Primary Care Physician
+    return Agent(
+        role="Primary Care Physician",
+        goal="Analyze patient health data and create personalized health improvement recommendations",
+        backstory="""You are a board-certified Internal Medicine physician with 20 years 
+        of experience in primary care and preventive medicine. You excel at analyzing 
+        patient data to create holistic health plans. You follow evidence-based guidelines 
+        from the ACP, AAFP, and USPSTF. You have expertise in lifestyle medicine, preventive 
+        care, nutrition, sleep medicine, and exercise physiology. You provide comprehensive 
+        recommendations for alcohol consumption, sleep optimization, exercise routines, and 
+        nutritional supplements based on the patient's current health status and risk factors.""",
+        tools=[],
+        verbose=True,
+        allow_delegation=False,
+        max_iter=25,
+        max_rpm=None,
+        llm=agent_llm,
+    )
+
+
+def create_health_assessment_task(agent: Agent) -> Task:
+    """
+    Create the comprehensive health assessment task.
+
+    Args:
+        agent: The agent to assign the task to
+
+    Returns:
+        Task: The configured health assessment task
+    """
+    task_description = """
+    Conduct a comprehensive health assessment for a patient visit with the following data:
+    
+    PATIENT INFORMATION:
+    - Social History:
+      * Diet: {diet}
+      * Exercise: {exercise_description} (current rating: {exercise_rating}/10)
+      * Alcohol: {alcohol_description} (current rating: {alcohol_rating}/10)
+      * Sleep: {sleep_description} (current rating: {sleep_rating}/10)
+      * Occupation: {occupation}
+    
+    - Medical History: {medical_conditions}
+    - Current Medications: {medications}
+    - Allergies: {allergies}
+    - Family History: Father - {family_history_father}, Mother - {family_history_mother}
+    
+    - Vital Signs & Measurements:
+      * Weight: {weight} lbs
+      * Height: {height} inches
+      * Blood Pressure: {blood_pressure}
+      * Cholesterol: Total {cholesterol_total}, HDL {cholesterol_hdl}, LDL {cholesterol_ldl}
+      * Triglycerides: {triglycerides}
+    
+    - Health Forecast:
+      * Cardiovascular risk (10-year): {cardiovascular_risk}
+      * Dementia risk: {dementia_risk}
+      * Metabolic disease risk: {metabolic_risk}
+    
+    As the Primary Care Physician, analyze this patient data and provide comprehensive health improvement recommendations.
+    
+    You should assess and provide specific recommendations for:
+    
+    1. Alcohol consumption - Evaluate current intake and provide optimization recommendations
+    2. Sleep patterns - Analyze sleep quality/duration and suggest improvements
+    3. Exercise routine - Evaluate current activity and recommend enhancements
+    4. Nutritional supplements - Recommend evidence-based supplements based on patient's health status
+    
+    Additionally, provide an UPDATED HEALTH FORECAST showing the expected improvements if the patient follows all your recommendations. Be realistic but optimistic about the potential health improvements.
+    
+    Consider the patient's risk factors, current medications, and health forecast when making recommendations.
+    Provide practical, actionable advice that the patient can implement.
     """
 
-    def __init__(self):
-        """Initialize the crew with tools and agents."""
-        # Initialize logger
-        self.logger = get_logger(__name__)
-
-        # Initialize tools
-        self.search_tool = EXASearchTool()
-
-        # Initialize agents
-        self._initialize_agents()
-
-    def _initialize_agents(self):
-        """Initialize all medical specialist agents."""
-        # Configure LLM for all agents
-        agent_llm = LLM(model="openai/gpt-4.1-nano")
-
-        # Primary Care Physician (Manager)
-        self.pcp = Agent(
-            role="Primary Care Physician",
-            goal="Coordinate comprehensive health assessment and create personalized health improvement plan based on patient data and specialist recommendations",
-            backstory="""You are a board-certified Internal Medicine physician with 20 years 
-            of experience in primary care and preventive medicine. You excel at synthesizing 
-            information from various specialists to create holistic health plans. You follow 
-            evidence-based guidelines from the ACP, AAFP, and USPSTF. You have a special 
-            interest in lifestyle medicine and preventive care. You are responsible for 
-            making alcohol consumption recommendations based on the patient's current habits 
-            and health status.""",
-            tools=[self.search_tool],
-            verbose=True,
-            allow_delegation=True,  # Critical for hierarchical process
-            max_iter=3,
-            llm=agent_llm,
-        )
-
-        # Nutrition Specialist
-        self.nutrition_specialist = Agent(
-            role="Clinical Nutrition Specialist",
-            goal="Analyze dietary patterns and recommend evidence-based nutritional supplements to optimize health",
-            backstory="""You are a Registered Dietitian Nutritionist (RDN) with a PhD in 
-            Nutritional Sciences and 15 years of clinical experience. You specialize in 
-            preventive nutrition, micronutrient optimization, and evidence-based supplement 
-            recommendations. You stay current with the latest research on nutritional 
-            supplements and their interactions. You consider the patient's diet, medical 
-            conditions, medications, and lab values when making supplement recommendations.""",
-            tools=[self.search_tool],
-            verbose=True,
-            allow_delegation=False,
-            llm=agent_llm,
-        )
-
-        # Sleep Medicine Specialist
-        self.sleep_specialist = Agent(
-            role="Sleep Medicine Physician",
-            goal="Optimize sleep quality and duration for improved health outcomes and disease prevention",
-            backstory="""You are a board-certified Sleep Medicine physician with expertise 
-            in sleep hygiene, circadian rhythm optimization, and the relationship between 
-            sleep and chronic disease. You have 18 years of experience helping patients 
-            improve their sleep without medication when possible. You understand the impact 
-            of sleep on metabolism, cardiovascular health, cognitive function, and overall 
-            well-being. You provide practical, evidence-based recommendations for sleep 
-            improvement.""",
-            tools=[self.search_tool],
-            verbose=True,
-            allow_delegation=False,
-            llm=agent_llm,
-        )
-
-        # Exercise Physiologist
-        self.exercise_specialist = Agent(
-            role="Exercise Physiologist",
-            goal="Design optimal fitness routines for cardiovascular health, longevity, and disease prevention",
-            backstory="""You are a certified Clinical Exercise Physiologist (CEP) with a 
-            Master's degree in Exercise Science and 12 years of experience. You specialize 
-            in endurance training, cardiovascular fitness, and exercise prescription for 
-            health optimization. You understand the dose-response relationship of exercise 
-            and can tailor recommendations based on current fitness levels, injury history, 
-            and health goals. You stay current with research on exercise for longevity and 
-            chronic disease prevention.""",
-            tools=[self.search_tool],
-            verbose=True,
-            allow_delegation=False,
-            llm=agent_llm,
-        )
-
-    def create_health_assessment_task(self, patient_data: Dict[str, Any]) -> Task:
-        """
-        Create the comprehensive health assessment task with patient data.
-
-        Args:
-            patient_data: Dictionary containing patient health information
-
-        Returns:
-            Task: The configured health assessment task
-        """
-        task_description = f"""
-        Conduct a brief health assessment for a patient visit with the following data:
-        
-        PATIENT INFORMATION:
-        - Social History:
-          * Diet: {patient_data["social_history"]["food"]}
-          * Exercise: {patient_data["social_history"]["exercise"]["description"]} (current rating: {patient_data["social_history"]["exercise"]["rating"]}/10)
-          * Alcohol: {patient_data["social_history"]["alcohol"]["description"]} (current rating: {patient_data["social_history"]["alcohol"]["rating"]}/10)
-          * Sleep: {patient_data["social_history"]["sleep"]["description"]} (current rating: {patient_data["social_history"]["sleep"]["rating"]}/10)
-          * Occupation: {patient_data["social_history"]["occupation"]}
-        
-        - Medical History: {", ".join(patient_data["medical_history"]["conditions"])}
-        - Current Medications: {", ".join([f"{med['name']} {med['dose']}" for med in patient_data["medications"]])}
-        - Allergies: {", ".join([f"{allergy['allergen']} ({allergy['reaction']})" for allergy in patient_data["allergies"]])}
-        - Family History: Father - {", ".join(patient_data["family_history"]["father"])}, Mother - {", ".join(patient_data["family_history"]["mother"])}
-        
-        - Vital Signs & Measurements:
-          * Weight: {patient_data["measurements"]["weight"]} lbs
-          * Height: {patient_data["measurements"]["height"]} inches
-          * Blood Pressure: {patient_data["measurements"]["blood_pressure"]}
-          * Cholesterol: Total {patient_data["measurements"]["cholesterol"]}, HDL {patient_data["measurements"]["hdl"]}, LDL {patient_data["measurements"]["ldl"]}
-          * Triglycerides: {patient_data["measurements"]["triglycerides"]}
-        
-        - Health Forecast:
-          * Cardiovascular risk (10-year): {patient_data["forecast"]["cardiovascular_event_10yr_probability"]}
-          * Dementia risk: {patient_data["forecast"]["dementia_risk"]}
-          * Metabolic disease risk: {patient_data["forecast"]["metabolic_disease_risk"]}
-        
-        As the Primary Care Physician, coordinate with your specialist team to develop a health improvement plan.
-        
-        You should:
-        
-        1. Assess alcohol consumption and provide specific recommendations for optimization
-        2. Delegate sleep assessment to the Sleep Medicine Specialist
-        3. Delegate exercise evaluation to the Exercise Physiologist  
-        4. Delegate nutritional supplement assessment to the Nutrition Specialist
-        
-        Synthesize all specialist recommendations into a cohesive plan that addresses the patient's risk factors.
-        """
-
-        expected_output = """
-        A comprehensive health improvement plan in the following JSON format:
-        {
+    expected_output = """
+    IMPORTANT: Provide your response ONLY as valid JSON with no additional text or markdown formatting.
+    
+    Return a comprehensive health improvement plan with updated forecast in exactly this JSON format:
+    {
+        "recommendations": {
             "alcohol": {
                 "description": "Specific recommendation for alcohol consumption",
                 "rating": <integer 1-10 indicating future benefit>
@@ -179,45 +161,50 @@ class PatientHealthCrew:
                 {
                     "description": "Specific supplement recommendation with dosage",
                     "rating": <integer 1-10 indicating future benefit>
-                },
-                ...
+                }
             ]
+        },
+        "forecast": {
+            "life_expectancy_years": <float showing improved life expectancy>,
+            "cardiovascular_event_10yr_probability": <float between 0-1 showing reduced risk>,
+            "energy_level": <"Low", "Moderate", or "High">,
+            "metabolic_disease_risk": <"Low", "Moderate", or "High">,
+            "dementia_risk": <"Low", "Moderate", or "High">,
+            "last_updated": <current date as "YYYY-MM-DD">
         }
-        """
+    }
+    
+    Ensure all ratings are integers between 1-10. Include at least 1-2 supplement recommendations.
+    The forecast should show realistic improvements based on following the recommendations.
+    """
 
-        return Task(
-            description=task_description,
-            expected_output=expected_output,
-            agent=self.pcp,
-        )
+    return Task(
+        description=task_description,
+        expected_output=expected_output,
+        agent=agent,
+    )
 
-    def create_crew(self, patient_data: Dict[str, Any]) -> Crew:
-        """
-        Create the hierarchical crew for patient health assessment.
 
-        Args:
-            patient_data: Dictionary containing patient health information
+def create_crew() -> Crew:
+    """
+    Create the sequential crew for patient health assessment.
 
-        Returns:
-            Crew: The configured hierarchical crew
-        """
-        # Create the task
-        health_assessment_task = self.create_health_assessment_task(patient_data)
+    Returns:
+        Crew: The configured sequential crew
+    """
+    # Create the agent
+    pcp = _create_pcp_agent()
 
-        # Create and return the crew
-        return Crew(
-            agents=[
-                self.pcp,
-                self.nutrition_specialist,
-                self.sleep_specialist,
-                self.exercise_specialist,
-            ],
-            tasks=[health_assessment_task],
-            process=Process.hierarchical,
-            manager_llm="openai/gpt-4.1-nano",  # Use GPT-4.1-nano for manager decisions
-            verbose=True,
-            memory=True,  # Enable memory for better context
-        )
+    # Create the task
+    health_assessment_task = create_health_assessment_task(pcp)
+
+    # Create and return the crew
+    return Crew(
+        agents=[pcp],
+        tasks=[health_assessment_task],
+        process=Process.sequential,  # Sequential process for single agent
+        verbose=False,
+    )
 
 
 def run_patient_health_assessment(
@@ -227,8 +214,7 @@ def run_patient_health_assessment(
     Run the patient health assessment crew.
 
     Args:
-        patient_data: Optional patient data dictionary. If not provided,
-                     loads from smash.json
+        patient_data: Patient data dictionary
 
     Returns:
         Dict containing health recommendations
@@ -237,12 +223,14 @@ def run_patient_health_assessment(
     logger = get_logger(__name__)
 
     # Create the crew
-    health_crew = PatientHealthCrew()
-    crew = health_crew.create_crew(patient_data)
+    crew = create_crew()
+
+    # Flatten patient data into inputs
+    inputs = flatten_patient_data(patient_data)
 
     try:
         logger.info("Starting patient health assessment")
-        result = crew.kickoff()
+        result = crew.kickoff(inputs)
 
         # Try to parse the result as JSON
         try:
@@ -251,12 +239,13 @@ def run_patient_health_assessment(
 
             json_match = re.search(r"\{[\s\S]*\}", str(result))
             if json_match:
-                recommendations = json.loads(json_match.group())
+                crew_output = json.loads(json_match.group())
                 logger.info(
-                    "Successfully parsed recommendations",
-                    recommendations_count=len(recommendations),
+                    "Successfully parsed crew output",
+                    has_recommendations="recommendations" in crew_output,
+                    has_forecast="forecast" in crew_output,
                 )
-                return recommendations
+                return crew_output
             else:
                 logger.warning(
                     "Could not extract JSON from result, returning raw output"
