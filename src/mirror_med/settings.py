@@ -20,9 +20,7 @@ class Settings(BaseSettings):
     # openai_api_key: str
 
     # CORS Configuration
-    cors_allowed_origins: str = (
-        "http://localhost:3000,http://localhost:3001,http://localhost:3002"
-    )
+    cors_allowed_origins: str = "*"
 
     # A2A Configuration
     # a2a_base_url: str = "https://lima.llama-bull.ts.net/"

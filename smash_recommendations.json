@@ -69,5 +69,30 @@
     "hdl": 60,
     "ldl": 100,
     "triglycerides": 150
+  },
+
+  "recommendations": {
+    "alcohol": {
+      "description": "Limit to 1 pint on Saturdays",
+      "rating": 9
+    },
+    "sleep": {
+      "description": "Aim for 7-8 hours nightly",
+      "rating": 8
+    },
+    "exercise": {
+      "description": "Add 1 more running day per week",
+      "rating": 7
+    },
+    "supplements": [
+      {
+        "description": "Take 2000 IU Vitamin D3 daily",
+        "rating": 9
+      },
+      {
+        "description": "Consider 1000 mg Omega-3 daily",
+        "rating": 7
+      }
+    ]
   }
 }
