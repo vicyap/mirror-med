@@ -163,6 +163,13 @@ async def health_check() -> HealthResponse:
 
 @app.post("/visit", response_model=VisitOutput)
 async def create_visit(visit_data: VisitInput) -> VisitOutput:
+    visit_dict = visit_data.model_dump()
+    visit_dict["recommendations"] = _get_stub_recommendations()
+    return VisitOutput(**visit_dict)
+
+
+@app.post("/visit-crew", response_model=VisitOutput)
+async def create_visit(visit_data: VisitInput) -> VisitOutput:
     # Convert input to dict
     visit_dict = visit_data.model_dump()
 
@@ -170,7 +177,7 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
         # Run the crew in a thread with timeout
         logger.info("Running patient health assessment crew")
         crew_result = await asyncio.wait_for(
-            asyncio.to_thread(run_patient_health_assessment, visit_dict), timeout=3
+            asyncio.to_thread(run_patient_health_assessment, visit_dict), timeout=300
         )
 
         # If crew returned valid recommendations
@@ -183,7 +190,7 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
             raise ValueError("Invalid crew output format")
 
     except asyncio.TimeoutError:
-        logger.error("Crew execution timed out after 45 seconds")
+        logger.error("Crew execution timed out after 300 seconds")
         # Use stub data
         visit_dict["recommendations"] = _get_stub_recommendations()
 

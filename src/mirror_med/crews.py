@@ -217,8 +217,6 @@ class PatientHealthCrew:
             manager_llm="openai/gpt-4.1-nano",  # Use GPT-4.1-nano for manager decisions
             verbose=True,
             memory=True,  # Enable memory for better context
-            max_rpm=30,  # Rate limiting
-            # step_callback=lambda step: self.logger.info("Step completed", step=step),  # Removed due to serialization issues
         )
 
 
