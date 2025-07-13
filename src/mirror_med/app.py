@@ -3,6 +3,7 @@ import warnings
 from contextlib import asynccontextmanager
 from typing import Any
 
+import weave
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -183,11 +184,14 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
     # Convert input to dict
     visit_dict = visit_data.model_dump()
 
+    timeout = 10
+
     try:
         # Run the crew in a thread with timeout
         logger.info("Running patient health assessment crew")
         crew_result = await asyncio.wait_for(
-            asyncio.to_thread(run_patient_health_assessment, visit_dict), timeout=300
+            asyncio.to_thread(run_patient_health_assessment, visit_dict),
+            timeout=timeout,
         )
 
         # If crew returned valid recommendations
@@ -204,7 +208,7 @@ async def create_visit(visit_data: VisitInput) -> VisitOutput:
             raise ValueError("Invalid crew output format")
 
     except asyncio.TimeoutError:
-        logger.error("Crew execution timed out after 300 seconds")
+        logger.error(f"Crew execution timed out after {timeout} seconds")
         # Use stub data
         stub_data = _get_stub_recommendations_and_forecast()
         visit_dict["recommendations"] = stub_data["recommendations"]
