@@ -901,8 +901,8 @@ def create_crew() -> Crew:
 
 async def run_patient_health_assessment_async(
     patient_data: Dict[str, Any],
-    mode: str = "single_agent",
-    # mode: str = "multi_agent",
+    # mode: str = "single_agent",
+    mode: str = "multi_agent",
 ) -> Dict[str, Any]:
     """
     Run the patient health assessment crew asynchronously.

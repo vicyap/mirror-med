@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="weave")
 
 import weave
 
-weave.init("stepandel-none/hack-jul12")
+weave.init("stepandel-none/weave-hacks")
 
 
 logger = get_logger(__name__)
