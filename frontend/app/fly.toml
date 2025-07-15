@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for med-mirror on 2025-07-13T14:28:05-07:00
+# fly.toml app configuration file generated for med-mirror on 2025-07-14T20:49:12-07:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -17,7 +17,6 @@ primary_region = 'sjc'
   processes = ['app']
 
 [[vm]]
-  memory = '512mb'
+  memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
-
